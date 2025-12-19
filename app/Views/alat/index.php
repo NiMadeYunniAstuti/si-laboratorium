@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Alat - LBMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
+    </head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <img src="/images/logo.webp" alt="LBMS Logo">
+            </div>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="/dashboard" class="sidebar-menu-item">
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </a>
+            <a href="/users" class="sidebar-menu-item">
+                <i class="bi bi-people"></i>
+                Data User
+            </a>
+            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
+                <a href="/alat" class="sidebar-menu-item active">
+                    <i class="bi bi-wrench"></i>
+                    Manajemen Alat
+                </a>
+            <?php endif; ?>
+            <a href="/peminjaman" class="sidebar-menu-item">
+                <i class="bi bi-hand-index"></i>
+                Peminjaman
+            </a>
+            <a href="/settings" class="sidebar-menu-item">
+                <i class="bi bi-gear"></i>
+                Settings
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/logout" class="sidebar-menu-item logout-item">
+                <i class="bi bi-box-arrow-right"></i>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Top Navbar -->
+    <nav class="top-navbar" id="topNavbar">
+        <div class="d-flex align-items-center">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+
+        <div class="navbar-right">
+            <div class="d-flex align-items-center">
+                <!-- Notification Icon -->
+                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
+                    <i class="bi bi-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        3
+                        <span class="visually-hidden">unread notifications</span>
+                    </span>
+                </a>
+
+                <!-- User Profile -->
+                <div class="user-profile">
+                    <div class="user-info text-end">
+                        <div class="user-name"><?= htmlspecialchars($user['name'] ?? 'Admin User') ?></div>
+                        <div class="user-role"><?= htmlspecialchars($user['role'] ?? 'ADMIN') ?></div>
+                    </div>
+                    <div class="user-avatar ms-2">
+                        <?= substr($user['name'] ?? 'Admin User', 0, 1) ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <h1 class="mb-4">Daftar Alat</h1>
+
+        <?php if (isset($error)): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <?= htmlspecialchars($error) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <?= htmlspecialchars($success) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Daftar Alat</h5>
+                <a href="/alat/new" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Tambah Alat
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Alat DataTable -->
+                <div class="table-responsive">
+                    <table id="alatTable" class="table table-striped table-hover">
+              <thead>
+                  <tr>
+                      <th>NO</th>
+                      <th>ID ALAT</th>
+                      <th>NAMA ALAT</th>
+                      <th>GAMBAR</th>
+                      <th>TAHUN ALAT</th>
+                      <th>STATUS</th>
+                      <th>ACTION</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <!-- Sample data rows - laboratory equipment -->
+                  <tr>
+                      <td>1</td>
+                      <td>ALT001</td>
+                      <td>Mikroskop Digital</td>
+                      <td>
+                          <img src="https://via.placeholder.com/60x60" alt="Mikroskop" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                      </td>
+                      <td>2021</td>
+                      <td><span class="badge bg-success">Tersedia</span></td>
+                      <td>
+                          <div class="alat-actions">
+                              <a href="/alat/1/detail" class="btn btn-sm btn-outline-info">
+                                  <i class="bi bi-eye"></i> Detail
+                              </a>
+                          </div>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>2</td>
+                      <td>ALT002</td>
+                      <td>Timbangan Analitik</td>
+                      <td>
+                          <img src="https://via.placeholder.com/60x60" alt="Timbangan" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                      </td>
+                      <td>2020</td>
+                      <td><span class="badge bg-success">Tersedia</span></td>
+                      <td>
+                          <div class="alat-actions">
+                              <a href="/alat/2/detail" class="btn btn-sm btn-outline-info">
+                                  <i class="bi bi-eye"></i> Detail
+                              </a>
+                          </div>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>3</td>
+                      <td>ALT003</td>
+                      <td>Autoklaf</td>
+                      <td>
+                          <img src="https://via.placeholder.com/60x60" alt="Autoklaf" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                      </td>
+                      <td>2019</td>
+                      <td><span class="badge bg-danger">Tidak Tersedia</span></td>
+                      <td>
+                          <div class="alat-actions">
+                              <a href="/alat/3/detail" class="btn btn-sm btn-outline-info">
+                                  <i class="bi bi-eye"></i> Detail
+                              </a>
+                          </div>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>4</td>
+                      <td>LT004</td>
+                      <td>Sentrifuge</td>
+                      <td>
+                          <img src="https://via.placeholder.com/60x60" alt="Sentrifuge" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                      </td>
+                      <td>2022</td>
+                      <td><span class="badge bg-success">Tersedia</span></td>
+                      <td>
+                          <div class="alat-actions">
+                              <a href="/alat/4/detail" class="btn btn-sm btn-outline-info">
+                                  <i class="bi bi-eye"></i> Detail
+                              </a>
+                          </div>
+                      </td>
+                  </tr>
+                  <tr>
+                      <td>5</td>
+                      <td>LT005</td>
+                      <td>Spektrofotometer UV-Vis</td>
+                      <td>
+                          <img src="https://via.placeholder.com/60x60" alt="Spektrofotometer" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                      </td>
+                      <td>2023</td>
+                      <td><span class="badge bg-warning">Dipinjam</span></td>
+                      <td>
+                          <div class="alat-actions">
+                              <a href="/alat/5/detail" class="btn btn-sm btn-outline-info">
+                                  <i class="bi bi-eye"></i> Detail
+                              </a>
+                          </div>
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tambah Alat Modal -->
+        <div class="modal fade" id="tambahAlatModal" tabindex="-1" aria-labelledby="tambahAlatModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tambahAlatModalLabel">
+                            <i class="bi bi-plus-circle me-2"></i>Tambah Alat Baru
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="/alat/create" id="tambahAlatForm">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="kode" class="form-label">Kode Alat</label>
+                                <input type="text" class="form-control" id="kode" name="kode" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="nama_alat" class="form-label">Nama Alat</label>
+                                <input type="text" class="form-control" id="nama_alat" name="nama_alat" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="kategori" class="form-label">Kategori</label>
+                                <select class="form-control" id="kategori" name="kategori" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <option value="Alat Optik">Alat Optik</option>
+                                    <option value="Alat Ukur">Alat Ukur</option>
+                                    <option value="Alat Sterilisasi">Alat Sterilisasi</option>
+                                    <option value="Alat Pemisah">Alat Pemisah</option>
+                                    <option value="Alat Analisis">Alat Analisis</option>
+                                    <option value="Alat Pemanas">Alat Pemanas</option>
+                                    <option value="Alat Pendingin">Alat Pendingin</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="stok" class="form-label">Jumlah Stok</label>
+                                <input type="number" class="form-control" id="stok" name="stok" min="1" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="kondisi" class="form-label">Kondisi</label>
+                                <select class="form-control" id="kondisi" name="kondisi" required>
+                                    <option value="">Pilih Kondisi</option>
+                                    <option value="Baik">Baik</option>
+                                    <option value="Rusak Ringan">Rusak Ringan</option>
+                                    <option value="Rusak Berat">Rusak Berat</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="deskripsi" class="form-label">Deskripsi</label>
+                                <textarea class="form-control" id="deskripsi" name="deskripsi" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Simpan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+        <script>
+        $(document).ready(function() {
+            // Sidebar toggle functionality
+            function toggleSidebar() {
+                $('#sidebar').toggleClass('collapsed');
+                $('#topNavbar').toggleClass('sidebar-collapsed');
+                $('#mainContent').toggleClass('sidebar-collapsed');
+
+                // Save sidebar state to localStorage
+                const isCollapsed = $('#sidebar').hasClass('collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed);
+            }
+
+            // Restore sidebar state from localStorage
+            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (sidebarCollapsed) {
+                $('#sidebar').addClass('collapsed');
+                $('#topNavbar').addClass('sidebar-collapsed');
+                $('#mainContent').addClass('sidebar-collapsed');
+            }
+
+            // Sidebar toggle click handler
+            $('#sidebarToggle').on('click', function(e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+
+            // Initialize DataTable with same properties as dashboard
+            if (typeof $ !== 'undefined' && $.fn.DataTable) {
+                $('#alatTable').DataTable({
+                    responsive: true,
+                    paging: true,
+                    searching: false,
+                    ordering: false,
+                    info: false,
+                    lengthChange: false,
+                    pageLength: 10,
+                    scrollX: true,
+                    scrollCollapse: false,
+                    autoWidth: false,
+                    responsive: false,
+                    // Remove fixedHeader to use CSS-only solution
+                    language: {
+                        paginate: {
+                            first: "Pertama",
+                            last: "Terakhir",
+                            next: "Selanjutnya",
+                            previous: "Sebelumnya"
+                        },
+                        emptyTable: "Tidak ada data tersedia dalam tabel",
+                        zeroRecords: "Tidak ditemukan data yang cocok"
+                    }
+                });
+            } else {
+                console.warn('jQuery or DataTables is not loaded');
+            }
+
+            // Form validation for tambah alat
+            $('#tambahAlatForm').on('submit', function(e) {
+                const stok = $('#stok').val();
+                const kode = $('#kode').val();
+
+                if (stok < 1) {
+                    e.preventDefault();
+                    alert('Stok minimal 1');
+                    return false;
+                }
+
+                if (!kode.match(/^LT\d{3,}$/)) {
+                    e.preventDefault();
+                    alert('Kode alat harus diawali dengan LT diikuti angka minimal 3 digit');
+                    return false;
+                }
+            });
+
+            // Edit alat button click handler
+            $('.edit-alat').on('click', function() {
+                const alatId = $(this).data('id');
+                // TODO: Implement edit alat functionality
+                alert('Edit alat dengan ID: ' + alatId);
+            });
+
+            // Delete alat button click handler (keeping for any that might still exist)
+            $('.delete-alat').on('click', function() {
+                const alatId = $(this).data('id');
+                if (confirm('Apakah Anda yakin ingin menghapus alat ini?')) {
+                    // TODO: Call API to delete alat
+                    alert('Alat berhasil dihapus');
+                }
+            });
+
+            // Maintenance alat button click handler (keeping for any that might still exist)
+            $('.maintenance-alat').on('click', function() {
+                const alatId = $(this).data('id');
+                if (confirm('Apakah Anda yakin ingin mengajukan maintenance untuk alat ini?')) {
+                    // TODO: Call API to submit maintenance request
+                    alert('Permintaan maintenance berhasil diajukan');
+                }
+            });
+
+            // View alat button click handler (for both .view-alat and .lihat-alat)
+            $('.view-alat, .lihat-alat').on('click', function() {
+                const alatId = $(this).data('id');
+                // TODO: Implement view alat functionality
+                alert('Lihat detail alat dengan ID: ' + alatId);
+            });
+        });
+    </script>
+</body>
+</html>
