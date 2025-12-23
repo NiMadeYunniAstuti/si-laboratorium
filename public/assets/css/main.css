@@ -182,7 +182,6 @@ body {
     color: #4B5563;
     margin-bottom: 2rem;
     text-align: left;
-    padding: 0 2rem;
 }
 
 .page-header {
@@ -373,6 +372,7 @@ body {
     background: white;
     padding: 10px;
     border-top: 1px solid #e5e7eb;
+    margin-top: 8px;
 }
 
 /* Enable proper scrolling for DataTables */
@@ -455,6 +455,27 @@ body {
     margin: 0 auto 1rem auto;
     color: white;
     font-size: 1.25rem;
+}
+
+/* Stat card icon colors */
+.stat-card:nth-child(1) .stat-icon {
+    /* Peminjaman Pending - Warning/Orange */
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.stat-card:nth-child(2) .stat-icon {
+    /* Peminjaman Selesai - Success/Green */
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-card:nth-child(3) .stat-icon {
+    /* Total User - Purple */
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.stat-card:nth-child(4) .stat-icon {
+    /* Total Selesai - Success/Green */
+    background: linear-gradient(135deg, #10b981, #059669);
 }
 
 .stat-value {
@@ -708,7 +729,7 @@ body {
 }
 
 .user-name {
-    color: white;
+    color: #000000;
     font-weight: 500;
     font-size: 0.875rem;
     margin-bottom: 0.125rem;

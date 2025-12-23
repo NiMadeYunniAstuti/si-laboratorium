@@ -25,17 +25,27 @@ class Router
     /**
      * Add GET route
      */
-    public function get($path, $controller, $action, $middleware = [])
+    public function get($path, $controller, $action = null, $middleware = [])
     {
-        $this->addRoute('GET', $path, $controller, $action, $middleware);
+        // Check if controller is a closure
+        if ($controller instanceof Closure) {
+            $this->addRoute('GET', $path, null, $controller, $middleware);
+        } else {
+            $this->addRoute('GET', $path, $controller, $action, $middleware);
+        }
     }
 
     /**
      * Add POST route
      */
-    public function post($path, $controller, $action, $middleware = [])
+    public function post($path, $controller, $action = null, $middleware = [])
     {
-        $this->addRoute('POST', $path, $controller, $action, $middleware);
+        // Check if controller is a closure
+        if ($controller instanceof Closure) {
+            $this->addRoute('POST', $path, null, $controller, $middleware);
+        } else {
+            $this->addRoute('POST', $path, $controller, $action, $middleware);
+        }
     }
 
     /**
@@ -72,29 +82,45 @@ class Router
 
                 // Execute middleware
                 foreach ($route['middleware'] as $middleware) {
-                    if (class_exists($middleware)) {
-                        $middlewareInstance = new $middleware();
-                        if (!$middlewareInstance->handle()) {
-                            return;
+                    if ($middleware === 'auth') {
+                        // Check authentication
+                        if (session_status() === PHP_SESSION_NONE) {
+                            session_start();
+                        }
+
+                        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+                            // User is unauthenticated, redirect to logout to clean up session
+                            header('Location: /logout');
+                            exit;
                         }
                     }
                 }
 
+                // Handle closure-based routes
+                if ($route['action'] instanceof Closure) {
+                    // Extract parameters from URL
+                    $params = $this->extractParams($route['path'], $requestUri);
+                    call_user_func_array($route['action'], $params);
+                    return;
+                }
+
                 // Load and execute controller
-                $controllerFile = __DIR__ . '/../Controllers/' . $route['controller'] . '.php';
-                if (file_exists($controllerFile)) {
-                    require_once $controllerFile;
+                if (!empty($route['controller'])) {
+                    $controllerFile = __DIR__ . '/../Controllers/' . $route['controller'] . '.php';
+                    if (file_exists($controllerFile)) {
+                        require_once $controllerFile;
 
-                    $controllerClass = $route['controller'];
-                    if (class_exists($controllerClass)) {
-                        $controller = new $controllerClass();
+                        $controllerClass = $route['controller'];
+                        if (class_exists($controllerClass)) {
+                            $controller = new $controllerClass();
 
-                        // Extract parameters from URL
-                        $params = $this->extractParams($route['path'], $requestUri);
+                            // Extract parameters from URL
+                            $params = $this->extractParams($route['path'], $requestUri);
 
-                        if (method_exists($controller, $route['action'])) {
-                            $controller->{$route['action']}(...$params);
-                            return;
+                            if (method_exists($controller, $route['action'])) {
+                                $controller->{$route['action']}(...$params);
+                                return;
+                            }
                         }
                     }
                 }

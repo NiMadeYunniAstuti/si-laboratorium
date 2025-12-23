@@ -176,8 +176,15 @@ class BaseController
      */
     protected function getCurrentUser()
     {
-        // Implement based on your authentication system
-        return $_SESSION['user'] ?? null;
+        if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+            return [
+                'id' => $_SESSION['user_id'] ?? null,
+                'name' => $_SESSION['user_name'] ?? null,
+                'email' => $_SESSION['user_email'] ?? null,
+                'role' => $_SESSION['user_role'] ?? null
+            ];
+        }
+        return null;
     }
 
     /**
@@ -185,7 +192,8 @@ class BaseController
      */
     protected function isLoggedIn()
     {
-        return !empty($this->getCurrentUser());
+        return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true &&
+               !empty($_SESSION['user_id']) && !empty($_SESSION['user_email']);
     }
 
     /**
@@ -194,8 +202,24 @@ class BaseController
     protected function requireAuth()
     {
         if (!$this->isLoggedIn()) {
-            $this->setFlash('error', 'Please login to continue');
-            $this->redirect('/login');
+            // User is not authenticated, redirect to logout to clean up session
+            $this->redirect('/logout');
         }
+    }
+
+    /**
+     * Get current user data for views
+     */
+    protected function getUser()
+    {
+        if ($this->isLoggedIn()) {
+            return [
+                'id' => $_SESSION['user_id'],
+                'name' => $_SESSION['user_name'],
+                'email' => $_SESSION['user_email'],
+                'role' => $_SESSION['user_role']
+            ];
+        }
+        return null;
     }
 }

@@ -22,10 +22,12 @@
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
-            <a href="/users" class="sidebar-menu-item">
-                <i class="bi bi-people"></i>
-                Data User
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
+                <a href="/users" class="sidebar-menu-item">
+                    <i class="bi bi-people"></i>
+                    Data User
+                </a>
+            <?php endif; ?>
             <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
                 <a href="/alat" class="sidebar-menu-item">
                     <i class="bi bi-wrench"></i>

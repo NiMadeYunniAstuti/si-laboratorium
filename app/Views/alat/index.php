@@ -33,10 +33,12 @@
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
+                <a href="/peminjaman" class="sidebar-menu-item">
+                    <i class="bi bi-hand-index"></i>
+                    Peminjaman
+                </a>
+            <?php endif; ?>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -118,101 +120,53 @@
               <thead>
                   <tr>
                       <th>NO</th>
-                      <th>ID ALAT</th>
+                      <th>KODE ALAT</th>
                       <th>NAMA ALAT</th>
                       <th>GAMBAR</th>
-                      <th>TAHUN ALAT</th>
+                      <th>TAHUN PEMBELIAN</th>
                       <th>STATUS</th>
                       <th>ACTION</th>
                   </tr>
               </thead>
               <tbody>
-                  <!-- Sample data rows - laboratory equipment -->
-                  <tr>
-                      <td>1</td>
-                      <td>ALT001</td>
-                      <td>Mikroskop Digital</td>
-                      <td>
-                          <img src="https://via.placeholder.com/60x60" alt="Mikroskop" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
-                      </td>
-                      <td>2021</td>
-                      <td><span class="badge bg-success">Tersedia</span></td>
-                      <td>
-                          <div class="alat-actions">
-                              <a href="/alat/1/detail" class="btn btn-sm btn-outline-info">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                          </div>
-                      </td>
-                  </tr>
-                  <tr>
-                      <td>2</td>
-                      <td>ALT002</td>
-                      <td>Timbangan Analitik</td>
-                      <td>
-                          <img src="https://via.placeholder.com/60x60" alt="Timbangan" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
-                      </td>
-                      <td>2020</td>
-                      <td><span class="badge bg-success">Tersedia</span></td>
-                      <td>
-                          <div class="alat-actions">
-                              <a href="/alat/2/detail" class="btn btn-sm btn-outline-info">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                          </div>
-                      </td>
-                  </tr>
-                  <tr>
-                      <td>3</td>
-                      <td>ALT003</td>
-                      <td>Autoklaf</td>
-                      <td>
-                          <img src="https://via.placeholder.com/60x60" alt="Autoklaf" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
-                      </td>
-                      <td>2019</td>
-                      <td><span class="badge bg-danger">Tidak Tersedia</span></td>
-                      <td>
-                          <div class="alat-actions">
-                              <a href="/alat/3/detail" class="btn btn-sm btn-outline-info">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                          </div>
-                      </td>
-                  </tr>
-                  <tr>
-                      <td>4</td>
-                      <td>LT004</td>
-                      <td>Sentrifuge</td>
-                      <td>
-                          <img src="https://via.placeholder.com/60x60" alt="Sentrifuge" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
-                      </td>
-                      <td>2022</td>
-                      <td><span class="badge bg-success">Tersedia</span></td>
-                      <td>
-                          <div class="alat-actions">
-                              <a href="/alat/4/detail" class="btn btn-sm btn-outline-info">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                          </div>
-                      </td>
-                  </tr>
-                  <tr>
-                      <td>5</td>
-                      <td>LT005</td>
-                      <td>Spektrofotometer UV-Vis</td>
-                      <td>
-                          <img src="https://via.placeholder.com/60x60" alt="Spektrofotometer" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
-                      </td>
-                      <td>2023</td>
-                      <td><span class="badge bg-warning">Dipinjam</span></td>
-                      <td>
-                          <div class="alat-actions">
-                              <a href="/alat/5/detail" class="btn btn-sm btn-outline-info">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                          </div>
-                      </td>
-                  </tr>
+                  <?php if (!empty($alat)): ?>
+                      <?php foreach ($alat as $index => $item): ?>
+                      <tr>
+                          <td><?= $index + 1 ?></td>
+                          <td><?= htmlspecialchars($item['kode_alat'] ?? '') ?></td>
+                          <td><?= htmlspecialchars($item['nama_alat'] ?? '') ?></td>
+                          <td>
+                              <?php if (!empty($item['gambar'])): ?>
+                                  <img src="/uploads/alat/<?= htmlspecialchars($item['gambar']) ?>"
+                                       alt="<?= htmlspecialchars($item['nama_alat'] ?? 'Alat') ?>"
+                                       style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                              <?php else: ?>
+                                  <img src="https://via.placeholder.com/60x60" alt="No Image"
+                                       style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                              <?php endif; ?>
+                          </td>
+                          <td><?= htmlspecialchars($item['tahun_pembelian'] ?? '-') ?></td>
+                          <td>
+                              <span class="badge bg-<?= match($item['status'] ?? 'TERSEDIA') {
+                                  'TERSEDIA' => 'success',
+                                  'DIPINJAM' => 'warning',
+                                  'MAINTENANCE' => 'warning',
+                                  'RUSAK' => 'danger',
+                                  default => 'secondary'
+                              } ?>">
+                                  <?= htmlspecialchars($item['status'] ?? 'TERSEDIA') ?>
+                              </span>
+                          </td>
+                          <td>
+                              <div class="alat-actions">
+                                  <a href="/alat/<?= $item['id'] ?>/detail" class="btn btn-sm btn-outline-info">
+                                      <i class="bi bi-eye"></i> Detail
+                                  </a>
+                              </div>
+                          </td>
+                      </tr>
+                      <?php endforeach; ?>
+                  <?php endif; ?>
               </tbody>
           </table>
                 </div>
@@ -336,8 +290,18 @@
                             next: "Selanjutnya",
                             previous: "Sebelumnya"
                         },
-                        emptyTable: "Tidak ada data tersedia dalam tabel",
+                        emptyTable: `<div class="text-center py-4">
+                            <i class="bi bi-inbox display-6 text-muted"></i>
+                            <div class="mt-2 text-muted">Tidak ada data tersedia dalam tabel</div>
+                        </div>`,
                         zeroRecords: "Tidak ditemukan data yang cocok"
+                    },
+                    drawCallback: function() {
+                        const api = this.api();
+                        const showPagination = api.data().count() > 0;
+                        $(api.table().container())
+                            .find('.dataTables_paginate')
+                            .toggle(showPagination);
                     }
                 });
             } else {

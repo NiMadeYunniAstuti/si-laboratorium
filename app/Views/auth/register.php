@@ -223,15 +223,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="phone" class="form-label">No Telfon</label>
-                        <input type="tel"
-                               class="form-control"
-                               id="phone"
-                               name="phone"
-                               placeholder="Masukkan nomor telepon">
-                    </div>
-
-                    <div class="form-group">
                         <label for="password" class="form-label">Password</label>
                         <input type="password"
                                class="form-control"
@@ -264,7 +255,7 @@
 
         <!-- Right Section - Hero Image -->
         <div class="right-section">
-            <img src="https://via.placeholder.com/600x400/f1f5f9/6b7280?text=Laboratory" alt="Gedung Laboratorium" class="hero-image">
+            <img src="/images/auth-filler.webp" alt="Gedung Laboratorium" class="hero-image">
         </div>
     </div>
 
@@ -276,7 +267,6 @@
             $('#registerForm').on('submit', function(e) {
                 const name = $('#name').val().trim();
                 const email = $('#email').val().trim();
-                const phone = $('#phone').val().trim();
                 const password = $('#password').val();
                 const confirmPassword = $('#confirm_password').val();
 
@@ -294,17 +284,10 @@
                     return false;
                 }
 
-                // Phone validation (optional)
-                if (phone && !phone.match(/^[\d\s\-\+\(\)]+$/)) {
-                    e.preventDefault();
-                    alert('Masukkan nomor telepon yang valid');
-                    return false;
-                }
-
                 // Password validation
-                if (password.length < 8) {
+                if (password.length === 0) {
                     e.preventDefault();
-                    alert('Password harus memiliki minimal 8 karakter');
+                    alert('Password tidak boleh kosong');
                     return false;
                 }
 

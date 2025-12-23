@@ -13,8 +13,7 @@ class PeminjamanModel extends BaseModel
         'tanggal_kembali',
         'tanggal_pengembalian',
         'status',
-        'keterangan',
-        'surat'
+        'keterangan'
     ];
 
     /**
@@ -108,8 +107,8 @@ class PeminjamanModel extends BaseModel
             }
 
             // Create peminjaman record
-            $sql = "INSERT INTO {$this->table} (user_id, alat_id, tanggal_pinjam, tanggal_kembali, status, keterangan, surat, created_at)
-                    VALUES (:user_id, :alat_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :surat, :created_at)";
+            $sql = "INSERT INTO {$this->table} (user_id, alat_id, tanggal_pinjam, tanggal_kembali, status, keterangan, created_at)
+                    VALUES (:user_id, :alat_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :created_at)";
 
             $this->db->query($sql, $data);
             $peminjamanId = $this->db->lastInsertId();

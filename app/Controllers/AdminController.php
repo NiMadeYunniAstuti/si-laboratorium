@@ -24,19 +24,41 @@ class AdminController extends BaseController
     }
 
     /**
+     * Override view method to add notification count
+     */
+    protected function view($view, $data = [])
+    {
+        // Add unread notification count if user is logged in
+        $userId = $_SESSION['user_id'] ?? null;
+        if ($userId) {
+            try {
+                $unreadCount = $this->notifikasiModel->getUnreadCount($userId);
+                $data['unreadNotificationCount'] = $unreadCount;
+            } catch (Exception $e) {
+                $data['unreadNotificationCount'] = 0;
+            }
+        } else {
+            $data['unreadNotificationCount'] = 0;
+        }
+
+        // Call parent view method
+        parent::view($view, $data);
+    }
+
+    /**
      * Show dashboard page
      */
     public function dashboard()
     {
-        // Authentication disabled for now
         // Check if user is logged in
-        // if (!$this->isLoggedIn()) {
-        //     $_SESSION['error'] = 'Anda harus login untuk mengakses dashboard';
-        //     $this->redirect('/login');
-        //     return;
-        // }
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses dashboard';
+            $this->redirect('/login');
+            return;
+        }
 
-        // Set default user data when auth is disabled
+        // Get current user data
+        $user = $this->getUser();
         $data = [
             'title' => 'Dashboard - LBMS',
             'user' => [
@@ -70,58 +92,6 @@ class AdminController extends BaseController
         } catch (Exception $e) {
             error_log("Recent peminjaman error: " . $e->getMessage());
             $data['recentPeminjaman'] = [];
-        }
-
-        // Fallback: Add sample data if no data found (for testing)
-        if (empty($data['recentPeminjaman'])) {
-            error_log("No peminjaman data found, using fallback sample data");
-            $data['recentPeminjaman'] = [
-                [
-                    'id' => 1,
-                    'user_id' => 2,
-                    'alat_id' => 1,
-                    'nama_alat' => 'Oscilloscope Tektronix TBS1102C',
-                    'kode_alat' => 'ELE-001',
-                    'user_name' => 'John Doe',
-                    'user_email' => 'john.doe@lbms.com',
-                    'tanggal_pinjam' => '2024-01-15',
-                    'tanggal_kembali' => '2024-01-20',
-                    'status' => 'SELESAI',
-                    'keterangan' => 'Peminjaman untuk praktikum elektronika dasar',
-                    'surat' => 'uploads/dokumen/surat-peminjaman-001.pdf',
-                    'created_at' => '2024-01-15 09:00:00'
-                ],
-                [
-                    'id' => 2,
-                    'user_id' => 3,
-                    'alat_id' => 2,
-                    'nama_alat' => 'Multimeter Digital Fluke 87V',
-                    'kode_alat' => 'ELE-002',
-                    'user_name' => 'Jane Smith',
-                    'user_email' => 'jane.smith@lbms.com',
-                    'tanggal_pinjam' => '2024-01-16',
-                    'tanggal_kembali' => '2024-01-23',
-                    'status' => 'DIPINJAM',
-                    'keterangan' => 'Pengukuran resistansi komponen elektronik',
-                    'surat' => 'uploads/dokumen/surat-peminjaman-002.pdf',
-                    'created_at' => '2024-01-16 10:00:00'
-                ],
-                [
-                    'id' => 3,
-                    'user_id' => 2,
-                    'alat_id' => 3,
-                    'nama_alat' => 'Power Supply Rigol DP832',
-                    'kode_alat' => 'ELE-003',
-                    'user_name' => 'John Doe',
-                    'user_email' => 'john.doe@lbms.com',
-                    'tanggal_pinjam' => '2024-01-19',
-                    'tanggal_kembali' => '2024-01-26',
-                    'status' => 'PENDING',
-                    'keterangan' => 'Pengukuran pH air sungai untuk penelitian lingkungan',
-                    'surat' => 'uploads/dokumen/surat-peminjaman-005.pdf',
-                    'created_at' => '2024-01-19 11:00:00'
-                ]
-            ];
         }
 
         // Clear session messages
@@ -183,11 +153,11 @@ class AdminController extends BaseController
     {
         header('Content-Type: application/json');
 
-        // Authentication disabled for now
-        // if (!$this->isLoggedIn()) {
-        //     echo json_encode(['error' => 'Unauthorized']);
-        //     return;
-        // }
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
 
         try {
             $userId = $_SESSION['user_id'];
@@ -285,20 +255,20 @@ class AdminController extends BaseController
             // Validate input
             if (empty($name)) {
                 $_SESSION['error'] = 'Nama tidak boleh kosong';
-                $this->redirect('/dashboard/profile');
+                $this->redirect('/settings/profile');
                 return;
             }
 
             if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $_SESSION['error'] = 'Email tidak valid';
-                $this->redirect('/dashboard/profile');
+                $this->redirect('/settings/profile');
                 return;
             }
 
             // Check if email exists for other user
             if ($this->userModel->emailExists($email, $userId)) {
                 $_SESSION['error'] = 'Email sudah digunakan oleh pengguna lain';
-                $this->redirect('/dashboard/profile');
+                $this->redirect('/settings/profile');
                 return;
             }
 
@@ -323,7 +293,7 @@ class AdminController extends BaseController
             $_SESSION['error'] = 'Terjadi kesalahan saat memperbarui profil';
         }
 
-        $this->redirect('/dashboard/profile');
+        $this->redirect('/settings/profile');
     }
 
     /**
@@ -355,8 +325,8 @@ class AdminController extends BaseController
                 return;
             }
 
-            if (strlen($newPassword) < 8) {
-                $_SESSION['error'] = 'Password baru minimal 8 karakter';
+            if (empty($newPassword)) {
+                $_SESSION['error'] = 'Password baru tidak boleh kosong';
                 $this->redirect('/dashboard/profile');
                 return;
             }
@@ -443,16 +413,14 @@ class AdminController extends BaseController
         }
 
         try {
-            $nik = trim($_POST['nik'] ?? '');
             $name = trim($_POST['name'] ?? '');
             $email = trim($_POST['email'] ?? '');
-            $phone = trim($_POST['phone'] ?? '');
             $password = $_POST['password'] ?? '';
             $confirmPassword = $_POST['confirmPassword'] ?? '';
             $role = $_POST['role'] ?? 'USER';
 
             // Validation
-            if (empty($nik) || empty($name) || empty($email) || empty($phone) || empty($password)) {
+            if (empty($name) || empty($email) || empty($password)) {
                 $_SESSION['error'] = 'Semua field wajib diisi';
                 $this->redirect('/users/new');
                 return;
@@ -470,19 +438,17 @@ class AdminController extends BaseController
                 return;
             }
 
-            if (strlen($password) < 8) {
-                $_SESSION['error'] = 'Password minimal 8 karakter';
+            if (empty($password)) {
+                $_SESSION['error'] = 'Password tidak boleh kosong';
                 $this->redirect('/users/new');
                 return;
             }
 
             // Create user
             $userData = [
-                'nik' => htmlspecialchars($nik),
                 'name' => htmlspecialchars($name),
                 'email' => strtolower($email),
-                'phone' => htmlspecialchars($phone),
-                'password' => password_hash($password, PASSWORD_DEFAULT),
+                'password_hash' => password_hash($password, PASSWORD_DEFAULT),
                 'role' => $role
             ];
 
@@ -498,6 +464,76 @@ class AdminController extends BaseController
         }
 
         $this->redirect('/users');
+    }
+
+    /**
+     * Update user
+     */
+    public function updateUser($userId)
+    {
+        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
+            $_SESSION['error'] = 'Unauthorized access';
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/users');
+            return;
+        }
+
+        try {
+            $name = trim($_POST['name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $status = strtoupper($_POST['status'] ?? 'ACTIVE');
+
+            // Validation
+            if (empty($name) || empty($email)) {
+                $_SESSION['error'] = 'Nama dan email wajib diisi';
+                $this->redirect('/users/' . $userId);
+                return;
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $_SESSION['error'] = 'Email tidak valid';
+                $this->redirect('/users/' . $userId);
+                return;
+            }
+
+            // Validate status
+            $validStatuses = ['ACTIVE', 'INACTIVE', 'BLACKLIST'];
+            if (!in_array($status, $validStatuses)) {
+                $_SESSION['error'] = 'Status tidak valid';
+                $this->redirect('/users/' . $userId);
+                return;
+            }
+
+            // Check if email exists for other user
+            if ($this->userModel->emailExists($email, $userId)) {
+                $_SESSION['error'] = 'Email sudah digunakan oleh pengguna lain';
+                $this->redirect('/users/' . $userId);
+                return;
+            }
+
+            // Update user
+            $userData = [
+                'name' => htmlspecialchars($name),
+                'email' => strtolower($email),
+                'status' => $status
+            ];
+
+            if ($this->userModel->update($userId, $userData)) {
+                $_SESSION['success'] = 'Data user berhasil diperbarui';
+            } else {
+                $_SESSION['error'] = 'Gagal memperbarui data user';
+            }
+
+        } catch (Exception $e) {
+            error_log("Update user error: " . $e->getMessage());
+            $_SESSION['error'] = 'Terjadi kesalahan saat memperbarui data user';
+        }
+
+        $this->redirect('/users/' . $userId);
     }
 
     /**
@@ -533,18 +569,89 @@ class AdminController extends BaseController
     }
 
     /**
+     * Update user status
+     */
+    public function updateUserStatus($userId)
+    {
+        header('Content-Type: application/json');
+
+        // Check if user is logged in and is admin
+        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            exit;
+        }
+
+        // Prevent admin from changing their own status
+        if ($userId == $_SESSION['user_id']) {
+            echo json_encode(['success' => false, 'message' => 'Tidak dapat mengubah status sendiri']);
+            exit;
+        }
+
+        try {
+            // Get status from POST body
+            $input = json_decode(file_get_contents('php://input'), true);
+            $status = strtoupper($input['status'] ?? '');
+
+            // Validate status
+            $validStatuses = ['ACTIVE', 'INACTIVE', 'BLACKLIST'];
+            if (!in_array($status, $validStatuses)) {
+                echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
+                exit;
+            }
+
+            // Update user status
+            if ($this->userModel->updateStatus($userId, $status)) {
+                $statusMessages = [
+                    'ACTIVE' => 'User berhasil diaktifkan',
+                    'INACTIVE' => 'User berhasil dinonaktifkan',
+                    'BLACKLIST' => 'User berhasil di-blacklist'
+                ];
+                echo json_encode([
+                    'success' => true,
+                    'message' => $statusMessages[$status] ?? 'Status berhasil diperbarui'
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Gagal memperbarui status user']);
+            }
+        } catch (Exception $e) {
+            error_log("Update user status error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan saat memperbarui status']);
+        }
+        exit;
+    }
+
+    /**
      * Show Data User page
      */
     public function dataUsers()
     {
-        // Set default user data when auth is disabled
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
+        try {
+            // Get all users data using pagination with large limit
+            $result = $this->userModel->getUsersPaginated(1, 1000); // Get first 1000 records
+            $usersList = $result['data'] ?? [];
+        } catch (Exception $e) {
+            error_log("Error fetching users data: " . $e->getMessage());
+            $usersList = [];
+        }
+
+        // Set user data
         $data = [
             'title' => 'Data User - LBMS',
             'user' => [
+                'id' => $_SESSION['user_id'] ?? null,
                 'name' => $_SESSION['user_name'] ?? 'Admin User',
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
+            'users' => $usersList,
+            'usersList' => $usersList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -561,6 +668,23 @@ class AdminController extends BaseController
      */
     public function manajemenAlat()
     {
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
+        try {
+            // Get all alat data using pagination with large limit
+            $alatModel = new AlatModel();
+            $result = $alatModel->getAlatPaginated(1, 1000); // Get first 1000 records
+            $alatList = $result['data'] ?? [];
+        } catch (Exception $e) {
+            error_log("Error fetching alat data: " . $e->getMessage());
+            $alatList = [];
+        }
+
         // Set default user data when auth is disabled
         $data = [
             'title' => 'Manajemen Alat - LBMS',
@@ -569,6 +693,7 @@ class AdminController extends BaseController
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
+            'alatList' => $alatList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -585,6 +710,26 @@ class AdminController extends BaseController
      */
     public function newAlat()
     {
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
+        try {
+            // Get all categories and types
+            $kategoriList = $this->alatModel->getAllKategori();
+            $tipeList = $this->alatModel->getAllTipe();
+        } catch (Exception $e) {
+            error_log("Error fetching kategori/tipe data: " . $e->getMessage());
+            $kategoriList = [];
+            $tipeList = [];
+        }
+
+        // Get old input from session if exists (for form repopulation)
+        $oldInput = $_SESSION['old_input'] ?? [];
+
         $data = [
             'title' => 'Tambah Alat Baru - LBMS',
             'user' => [
@@ -592,12 +737,17 @@ class AdminController extends BaseController
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
+            'kategoriList' => $kategoriList,
+            'tipeList' => $tipeList,
             'error' => $_SESSION['error'] ?? null,
-            'success' => $_SESSION['success'] ?? null
+            'success' => $_SESSION['success'] ?? null,
+            'oldInput' => $oldInput  // Pass old input to view
         ];
 
+        // Clear session messages and old input
         unset($_SESSION['error']);
         unset($_SESSION['success']);
+        unset($_SESSION['old_input']);
 
         $this->view('alat/new', $data);
     }
@@ -635,10 +785,68 @@ class AdminController extends BaseController
     }
 
     /**
+     * Show edit alat page
+     */
+    public function editAlat($id)
+    {
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
+        // Get alat data
+        $alatData = $this->alatModel->getAlatDetails($id);
+
+        if (!$alatData) {
+            $_SESSION['error'] = 'Alat tidak ditemukan';
+            $this->redirect('/alat');
+            return;
+        }
+
+        try {
+            // Get all categories and types
+            $kategoriList = $this->alatModel->getAllKategori();
+            $tipeList = $this->alatModel->getAllTipe();
+        } catch (Exception $e) {
+            error_log("Error fetching kategori/tipe data: " . $e->getMessage());
+            $kategoriList = [];
+            $tipeList = [];
+        }
+
+        $data = [
+            'title' => 'Edit Alat - LBMS',
+            'user' => [
+                'name' => $_SESSION['user_name'] ?? 'Admin User',
+                'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
+                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+            ],
+            'alatDetail' => $alatData,
+            'kategoriList' => $kategoriList,
+            'tipeList' => $tipeList,
+            'error' => $_SESSION['error'] ?? null,
+            'success' => $_SESSION['success'] ?? null
+        ];
+
+        unset($_SESSION['error']);
+        unset($_SESSION['success']);
+
+        $this->view('alat/edit', $data);
+    }
+
+    /**
      * Show new user page
      */
     public function newUser()
     {
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
         $data = [
             'title' => 'Tambah User Baru - LBMS',
             'user' => [
@@ -654,6 +862,38 @@ class AdminController extends BaseController
         unset($_SESSION['success']);
 
         $this->view('users/new', $data);
+    }
+
+    /**
+     * Show edit user page
+     */
+    public function editUser($id)
+    {
+        // Get user data
+        $userData = $this->userModel->getUserDetails($id);
+
+        if (!$userData) {
+            $_SESSION['error'] = 'User tidak ditemukan';
+            $this->redirect('/users');
+            return;
+        }
+
+        $data = [
+            'title' => 'Edit User - LBMS',
+            'user' => [
+                'name' => $_SESSION['user_name'] ?? 'Admin User',
+                'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
+                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+            ],
+            'userDetail' => $userData,
+            'error' => $_SESSION['error'] ?? null,
+            'success' => $_SESSION['success'] ?? null
+        ];
+
+        unset($_SESSION['error']);
+        unset($_SESSION['success']);
+
+        $this->view('users/edit', $data);
     }
 
     /**
@@ -673,6 +913,7 @@ class AdminController extends BaseController
         $data = [
             'title' => 'Detail User - LBMS',
             'user' => [
+                'id' => $_SESSION['user_id'] ?? null,
                 'name' => $_SESSION['user_name'] ?? 'Admin User',
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
@@ -694,41 +935,67 @@ class AdminController extends BaseController
     public function createAlat()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $kode_alat = $_POST['kode_alat'] ?? '';
+
+            // Validasi: Cek apakah kode_alat sudah ada
+            try {
+                $exists = $this->alatModel->kodeAlatExists($kode_alat);
+                if ($exists) {
+                    $_SESSION['error'] = "Kode alat '{$kode_alat}' sudah terdaftar. Silakan gunakan kode lain.";
+                    $_SESSION['old_input'] = [
+                        'kode_alat' => $_POST['kode_alat'] ?? '',
+                        'nama_alat' => $_POST['nama_alat'] ?? '',
+                        'kategori_id' => $_POST['kategori_id'] ?? null,
+                        'tipe_id' => $_POST['tipe_id'] ?? null,
+                        'tahun_pembelian' => $_POST['tahun_pembelian'] ?? null,
+                        'status' => $_POST['status'] ?? 'TERSEDIA',
+                        'deskripsi' => $_POST['deskripsi'] ?? ''
+                    ];
+                    $this->redirect('/alat/new');
+                    return;
+                }
+            } catch (Exception $e) {
+                error_log("Error checking kode_alat: " . $e->getMessage());
+                // Continue with insert attempt
+            }
+
             $data = [
-                'kode_alat' => $_POST['kode_alat'] ?? '',
+                'kode_alat' => $kode_alat,
                 'nama_alat' => $_POST['nama_alat'] ?? '',
                 'kategori_id' => $_POST['kategori_id'] ?? null,
                 'tipe_id' => $_POST['tipe_id'] ?? null,
                 'tahun_pembelian' => $_POST['tahun_pembelian'] ?? null,
-                'jumlah' => $_POST['jumlah'] ?? 1,
-                'kondisi' => $_POST['kondisi'] ?? 'BAIK',
                 'status' => $_POST['status'] ?? 'TERSEDIA',
                 'deskripsi' => $_POST['deskripsi'] ?? ''
             ];
 
             // Handle file upload
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = 'public/images/alat/';
+                $uploadDir = 'public/upload/images/';
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
 
-                $fileName = time() . '_' . basename($_FILES['gambar']['name']);
+                // Use the renamed filename (already formatted from frontend)
+                $fileName = basename($_FILES['gambar']['name']);
                 $targetPath = $uploadDir . $fileName;
 
                 if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
-                    $data['gambar'] = $fileName;
+                    // Store the path in database (without 'public/' prefix for web access)
+                    $data['gambar'] = 'upload/images/' . $fileName;
                 }
             }
 
             try {
                 $this->alatModel->create($data);
                 $_SESSION['success'] = 'Alat berhasil ditambahkan';
+                $this->redirect('/alat');
             } catch (Exception $e) {
+                error_log("Create alat error: " . $e->getMessage());
                 $_SESSION['error'] = 'Gagal menambahkan alat: ' . $e->getMessage();
+                $_SESSION['old_input'] = $data;
+                $this->redirect('/alat/new');
             }
-
-            $this->redirect('/alat');
         }
     }
 
@@ -740,28 +1007,28 @@ class AdminController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'nama_alat' => $_POST['nama_alat'] ?? '',
-                'kode_alat' => $_POST['kode_alat'] ?? '',
-                'merek' => $_POST['merek'] ?? '',
+                // kode_alat di-exclude dari update untuk mencegah perubahan
                 'kategori_id' => $_POST['kategori_id'] ?? '',
                 'tipe_id' => $_POST['tipe_id'] ?? '',
-                'jumlah' => $_POST['jumlah'] ?? 1,
-                'kondisi' => $_POST['kondisi'] ?? 'BAIK',
+                'tahun_pembelian' => $_POST['tahun_pembelian'] ?? '',
                 'status' => $_POST['status'] ?? 'TERSEDIA',
-                'keterangan' => $_POST['keterangan'] ?? ''
+                'deskripsi' => $_POST['deskripsi'] ?? ''
             ];
 
             // Handle file upload if new image provided
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = 'public/images/alat/';
+                $uploadDir = 'public/upload/images/';
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
 
-                $fileName = time() . '_' . basename($_FILES['gambar']['name']);
+                // Use the renamed filename (already formatted from frontend)
+                $fileName = basename($_FILES['gambar']['name']);
                 $targetPath = $uploadDir . $fileName;
 
                 if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
-                    $data['gambar'] = $fileName;
+                    // Store the path in database (without 'public/' prefix for web access)
+                    $data['gambar'] = 'upload/images/' . $fileName;
                 }
             }
 
@@ -769,14 +1036,6 @@ class AdminController extends BaseController
 
             try {
                 $this->alatModel->update($id, $data);
-
-                // Create notification for updated alat
-                $this->notifikasiModel->createNotification(
-                    'Alat Diperbarui',
-                    "Alat '{$data['nama_alat']}' telah diperbarui",
-                    'admin',
-                    [$this->currentUser['id']]
-                );
 
                 $_SESSION['success'] = 'Alat berhasil diperbarui';
             } catch (Exception $e) {
@@ -833,10 +1092,67 @@ class AdminController extends BaseController
     }
 
     /**
+     * Update alat status via AJAX
+     */
+    public function updateAlatStatus($alatId)
+    {
+        header('Content-Type: application/json');
+
+        // Check if user is logged in and is admin
+        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
+            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+            exit;
+        }
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $status = strtolower($input['status'] ?? '');
+
+            // Validate status
+            $validStatuses = ['tersedia', 'dipinjam', 'maintenance', 'rusak'];
+            if (!in_array($status, $validStatuses)) {
+                echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
+                exit;
+            }
+
+            // Update alat status
+            if ($this->alatModel->updateStatus($alatId, $status)) {
+                $statusMessages = [
+                    'tersedia' => 'Status alat berhasil diubah menjadi Tersedia',
+                    'dipinjam' => 'Status alat berhasil diubah menjadi Dipinjam',
+                    'maintenance' => 'Status alat berhasil diubah menjadi Maintenance',
+                    'rusak' => 'Status alat berhasil diubah menjadi Rusak'
+                ];
+                echo json_encode(['success' => true, 'message' => $statusMessages[$status]]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Gagal memperbarui status alat']);
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
      * Show new peminjaman page
      */
     public function newPeminjaman()
     {
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
+        // Get available alat (status = TERSEDIA)
+        try {
+            $alatList = $this->alatModel->getAvailableAlat();
+        } catch (Exception $e) {
+            error_log("Error fetching available alat: " . $e->getMessage());
+            $alatList = [];
+        }
+
         $data = [
             'title' => 'Ajukan Peminjaman Baru - LBMS',
             'user' => [
@@ -844,6 +1160,7 @@ class AdminController extends BaseController
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
+            'alatList' => $alatList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -859,30 +1176,31 @@ class AdminController extends BaseController
      */
     public function detailPeminjaman($id)
     {
-        // Get peminjaman data - would normally fetch from database
-        $peminjamanData = [
-            'id' => $id,
-            'nama_peminjam' => 'John Doe',
-            'nim_nip' => '123456789012',
-            'keperluan' => 'Praktikum Mikrobiologi untuk penelitian kultur bakteri',
-            'alat_id' => '1',
-            'jumlah' => '1',
-            'tanggal_pinjam' => '2024-12-15',
-            'tanggal_kembali' => '2024-12-22',
-            'tanggal_selesai' => null,
-            'status' => 'DIPINJAM',
-            'surat' => 'SP/001/LAB/2024',
-            'created_at' => '2024-12-15 09:00:00'
-        ];
+        // Check if user is ADMIN - USER role cannot access detail page
+        $userRole = $_SESSION['user_role'] ?? 'USER';
+        if ($userRole !== 'ADMIN') {
+            $_SESSION['error'] = 'Anda tidak memiliki akses ke halaman detail peminjaman';
+            $this->redirect('/peminjaman');
+            return;
+        }
+
+        // Get peminjaman data from database
+        $peminjamanDetail = $this->peminjamanModel->getPeminjamanDetails($id);
+
+        if (!$peminjamanDetail) {
+            $_SESSION['error'] = 'Data peminjaman tidak ditemukan';
+            $this->redirect('/peminjaman');
+            return;
+        }
 
         $data = [
             'title' => 'Detail Peminjaman - LBMS',
             'user' => [
                 'name' => $_SESSION['user_name'] ?? 'Admin User',
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
-                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+                'role' => $userRole
             ],
-            'peminjamanDetail' => $peminjamanData,
+            'peminjamanDetail' => $peminjamanDetail,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -900,27 +1218,53 @@ class AdminController extends BaseController
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
+                // Get user_id from session (session structure is $_SESSION['user_id'], not $_SESSION['user']['id'])
+                $userId = $_SESSION['user_id'] ?? null;
+
+                if (!$userId) {
+                    // User is not authenticated, redirect to logout
+                    $this->redirect('/logout');
+                    return;
+                }
+
                 $data = [
-                    'nama_peminjam' => $_POST['nama_peminjam'] ?? '',
-                    'nim_nip' => $_POST['nim_nip'] ?? '',
+                    'user_id' => $userId,
                     'alat_id' => $_POST['alat_id'] ?? '',
-                    'jumlah' => $_POST['jumlah'] ?? 1,
                     'tanggal_pinjam' => $_POST['tanggal_pinjam'] ?? '',
                     'tanggal_kembali' => $_POST['tanggal_kembali'] ?? '',
-                    'keperluan' => $_POST['keperluan'] ?? '',
-                    'surat' => $_POST['surat'] ?? '',
+                    'keterangan' => $_POST['catatan'] ?? '', // Map 'catatan' from form to 'keterangan' in DB
                     'status' => 'PENDING'
                 ];
 
+                // Get nama_peminjam from session for notification
+                $namaPeminjam = $_POST['nama_peminjam'] ?? $_SESSION['user_name'] ?? 'User';
+
                 // Validation
-                if (empty($data['nama_peminjam']) || empty($data['nim_nip']) || empty($data['alat_id'])) {
+                if (empty($data['alat_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
                     $_SESSION['error'] = 'Semua field wajib diisi';
                     $this->redirect('/peminjaman/new');
                     return;
                 }
 
                 // Create peminjaman record
-                if ($this->peminjamanModel->create($data)) {
+                $peminjamanId = $this->peminjamanModel->create($data);
+                if ($peminjamanId) {
+                    // Get peminjaman details for notification
+                    $peminjaman = $this->peminjamanModel->getPeminjamanDetails($peminjamanId);
+                    if ($peminjaman) {
+                        // Get all ADMIN users
+                        $adminUsers = $this->userModel->getUsersByRole('ADMIN');
+                        if ($adminUsers && !empty($adminUsers)) {
+                            $adminIds = array_column($adminUsers, 'id');
+                            // Create notification to all admins
+                            $this->notifikasiModel->createNotification(
+                                'Pengajuan Peminjaman Baru',
+                                "Peminjaman {$peminjaman['nama_alat']} oleh {$namaPeminjam} menunggu persetujuan",
+                                $adminIds,
+                                $peminjamanId  // Attach peminjaman_id to notification
+                            );
+                        }
+                    }
                     $_SESSION['success'] = 'Pengajuan peminjaman berhasil dikirim';
                 } else {
                     $_SESSION['error'] = 'Gagal mengajukan peminjaman';
@@ -1005,14 +1349,35 @@ class AdminController extends BaseController
      */
     public function peminjaman()
     {
+        // Check if user is logged in
+        if (!$this->isLoggedIn()) {
+            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
+            $this->redirect('/login');
+            return;
+        }
+
+        // Get current user
+        $userId = $_SESSION['user_id'] ?? null;
+        $userRole = $_SESSION['user_role'] ?? 'USER';
+
+        // Fetch peminjaman data based on role
+        if ($userRole === 'ADMIN') {
+            // Admin sees all peminjaman
+            $peminjamanList = $this->peminjamanModel->getRecentPeminjaman(100);
+        } else {
+            // Regular user sees only their own peminjaman
+            $peminjamanList = $this->peminjamanModel->getPeminjamanByUser($userId, null, 100);
+        }
+
         // Set default user data when auth is disabled
         $data = [
             'title' => 'Peminjaman - LBMS',
             'user' => [
                 'name' => $_SESSION['user_name'] ?? 'Admin User',
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
-                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+                'role' => $userRole
             ],
+            'peminjamanList' => $peminjamanList ?? [],
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];

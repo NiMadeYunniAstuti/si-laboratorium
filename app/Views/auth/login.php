@@ -235,7 +235,7 @@
 
         <!-- Right Section - Hero Image -->
         <div class="right-section">
-            <img src="https://via.placeholder.com/600x400/f1f5f9/6b7280?text=Laboratory" alt="Gedung Laboratorium" class="hero-image">
+            <img src="/images/auth-filler.webp" alt="Gedung Laboratorium" class="hero-image">
         </div>
     </div>
 

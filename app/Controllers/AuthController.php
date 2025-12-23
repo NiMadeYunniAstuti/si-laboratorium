@@ -66,41 +66,46 @@ class AuthController extends BaseController
         }
 
         try {
-            // Attempt to login user
-            if ($this->userModel->verifyPassword($email, $password)) {
-                $user = $this->userModel->findByEmail($email);
+            // First, find user by email
+            $user = $this->userModel->findByEmail($email);
 
-                if ($user && $user['status'] === 'ACTIVE') {
-                    // Set session data
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_name'] = $user['name'];
-                    $_SESSION['user_role'] = $user['role'];
-                    $_SESSION['logged_in'] = true;
-                    $_SESSION['login_time'] = time();
+            if ($user && $this->userModel->verifyPassword($password, $user['password_hash'])) {
+                // Check user status
+                $status = strtoupper($user['status'] ?? 'INACTIVE');
 
-                    // Update last login
-                    $this->userModel->updateLastLogin($user['id']);
-
-                    // Set remember me cookie if checked
-                    if ($remember) {
-                        $token = bin2hex(random_bytes(32));
-                        setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/'); // 30 days
-                        // TODO: Store token in database
-                    }
-
-                    // Redirect based on role
-                    if ($user['role'] === 'ADMIN') {
-                        $_SESSION['success'] = 'Welcome back, Administrator!';
-                        $this->redirect('/admin/dashboard');
-                    } else {
-                        $_SESSION['success'] = 'Welcome back!';
-                        $this->redirect('/dashboard');
-                    }
+                if ($status === 'BLACKLIST') {
+                    $_SESSION['error'] = 'Akun Anda di-blacklist. Silakan hubungi administrator.';
+                    $this->redirect('/login');
                     return;
-                } else {
-                    $_SESSION['error'] = 'Your account is inactive. Please contact administrator.';
                 }
+
+                if ($status !== 'ACTIVE') {
+                    $_SESSION['error'] = 'Akun Anda tidak aktif. Silakan hubungi administrator.';
+                    $this->redirect('/login');
+                    return;
+                }
+
+                // Set session data
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_name'] = $user['name'];
+                $_SESSION['user_role'] = $user['role'];
+                $_SESSION['logged_in'] = true;
+                $_SESSION['login_time'] = time();
+
+                // Update last login
+                $this->userModel->updateLastLogin($user['id']);
+
+                // Set remember me cookie if checked
+                if ($remember) {
+                    $token = bin2hex(random_bytes(32));
+                    setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/'); // 30 days
+                    // TODO: Store token in database
+                }
+
+                // Redirect both ADMIN and USER to dashboard
+                $this->redirect('/dashboard');
+                return;
             } else {
                 $_SESSION['error'] = 'Invalid email or password';
             }
@@ -151,7 +156,6 @@ class AuthController extends BaseController
         $password = $_POST['password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $role = $_POST['role'] ?? 'USER';
-        $terms = isset($_POST['terms']);
 
         // Validate input
         $errors = [];
@@ -170,10 +174,6 @@ class AuthController extends BaseController
 
         if (empty($password)) {
             $errors[] = 'Password is required';
-        } elseif (strlen($password) < 8) {
-            $errors[] = 'Password must be at least 8 characters long';
-        } elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/', $password)) {
-            $errors[] = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
         }
 
         if ($password !== $confirmPassword) {
@@ -182,10 +182,6 @@ class AuthController extends BaseController
 
         if (!in_array($role, ['USER', 'ADMIN'])) {
             $errors[] = 'Invalid account type selected';
-        }
-
-        if (!$terms) {
-            $errors[] = 'You must agree to the Terms and Conditions';
         }
 
         if (!empty($errors)) {

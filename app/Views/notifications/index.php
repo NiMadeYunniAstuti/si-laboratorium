@@ -81,13 +81,6 @@
                 <i class="bi bi-gear"></i>
                 Settings
             </a>
-            <a href="/notifications" class="sidebar-menu-item active">
-                <i class="bi bi-bell"></i>
-                Notifikasi
-                <?php if ($unreadCount > 0): ?>
-                    <span class="badge bg-danger ms-auto"><?php echo $unreadCount; ?></span>
-                <?php endif; ?>
-            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -132,21 +125,9 @@
 
         <!-- Page Header -->
         <div class="page-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="page-title">Notifikasi</h1>
-                    <p class="page-subtitle">Kelola notifikasi dan pembaruan sistem</p>
-                </div>
-                <div class="page-actions">
-                    <button type="button" class="btn btn-outline-primary" id="markAllReadBtn">
-                        <i class="bi bi-check-all me-2"></i>
-                        Tandai Semua Dibaca
-                    </button>
-                    <button type="button" class="btn btn-outline-danger" id="clearAllBtn">
-                        <i class="bi bi-trash me-2"></i>
-                        Hapus Semua
-                    </button>
-                </div>
+            <div>
+                <h1 class="page-title">Notifikasi</h1>
+                <p class="page-subtitle">Kelola notifikasi dan pembaruan sistem</p>
             </div>
         </div>
 
@@ -155,24 +136,14 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-bell me-2"></i>
                                 Daftar Notifikasi
-                                <?php if ($unreadCount > 0): ?>
+                                <?php if (!empty($notifications) && $unreadCount > 0): ?>
                                     <span class="badge bg-danger ms-2"><?php echo $unreadCount; ?> baru</span>
                                 <?php endif; ?>
                             </h5>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <input type="radio" class="btn-check" name="filter" id="filter-all" autocomplete="off" checked>
-                                <label class="btn btn-outline-primary" for="filter-all">Semua</label>
-
-                                <input type="radio" class="btn-check" name="filter" id="filter-unread" autocomplete="off">
-                                <label class="btn btn-outline-primary" for="filter-unread">Belum Dibaca</label>
-
-                                <input type="radio" class="btn-check" name="filter" id="filter-read" autocomplete="off">
-                                <label class="btn btn-outline-primary" for="filter-read">Sudah Dibaca</label>
-                            </div>
                         </div>
                         <div class="card-body p-0">
                             <?php if (!empty($notifications)): ?>
@@ -226,46 +197,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/assets/js/dashboard.js"></script>
     <script>
-        // Notification filtering
-        document.querySelectorAll('input[name="filter"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const filter = this.id.replace('filter-', '');
-                filterNotifications(filter);
-            });
-        });
-
-        function filterNotifications(filter) {
-            const items = document.querySelectorAll('.notification-item');
-
-            items.forEach(item => {
-                const isRead = item.dataset.read === '1';
-
-                switch(filter) {
-                    case 'unread':
-                        item.style.display = isRead ? 'none' : 'block';
-                        break;
-                    case 'read':
-                        item.style.display = isRead ? 'block' : 'none';
-                        break;
-                    default:
-                        item.style.display = 'block';
-                }
-            });
-        }
-
         // Mark notification as read
         document.querySelectorAll('.mark-read-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const notificationId = this.dataset.id;
                 markAsRead(notificationId);
             });
-        });
-
-        // Mark all as read
-        document.getElementById('markAllReadBtn').addEventListener('click', function() {
-            if (confirm('Tandai semua notifikasi sebagai dibaca?')) {
-                markAllAsRead();
-            }
         });
 
         // Delete notification
@@ -276,13 +213,6 @@
                     deleteNotification(notificationId);
                 }
             });
-        });
-
-        // Clear all notifications
-        document.getElementById('clearAllBtn').addEventListener('click', function() {
-            if (confirm('Hapus semua notifikasi? Tindakan ini tidak dapat dibatalkan.')) {
-                clearAllNotifications();
-            }
         });
 
         function markAsRead(id) {
@@ -307,27 +237,6 @@
             });
         }
 
-        function markAllAsRead() {
-            fetch('/notifications/mark-all-read', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.querySelectorAll('.notification-item.unread').forEach(item => {
-                        item.classList.remove('unread');
-                        item.dataset.read = '1';
-
-                        const markBtn = item.querySelector('.mark-read-btn');
-                        if (markBtn) {
-                            markBtn.remove();
-                        }
-                    });
-                    updateUnreadCount();
-                }
-            });
-        }
-
         function deleteNotification(id) {
             fetch(`/notifications/delete/${id}`, {
                 method: 'DELETE'
@@ -338,29 +247,6 @@
                     const item = document.querySelector(`[data-id="${id}"]`);
                     item.remove();
                     updateUnreadCount();
-                }
-            });
-        }
-
-        function clearAllNotifications() {
-            fetch('/notifications/clear-all', {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.querySelectorAll('.notification-item').forEach(item => item.remove());
-                    updateUnreadCount();
-
-                    // Show empty state
-                    const container = document.querySelector('.card-body');
-                    container.innerHTML = `
-                        <div class="text-center py-5">
-                            <i class="bi bi-bell-slash display-1 text-muted"></i>
-                            <h5 class="mt-3 text-muted">Tidak ada notifikasi</h5>
-                            <p class="text-muted">Belum ada notifikasi untuk ditampilkan</p>
-                        </div>
-                    `;
                 }
             });
         }

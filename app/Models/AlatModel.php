@@ -96,6 +96,24 @@ class AlatModel extends BaseModel
     }
 
     /**
+     * Get all categories
+     */
+    public function getAllKategori()
+    {
+        $sql = "SELECT id, name FROM kategori_alat WHERE deletedAt IS NULL ORDER BY name ASC";
+        return $this->db->fetchAll($sql);
+    }
+
+    /**
+     * Get all types
+     */
+    public function getAllTipe()
+    {
+        $sql = "SELECT id, name FROM tipe_alat WHERE deletedAt IS NULL ORDER BY name ASC";
+        return $this->db->fetchAll($sql);
+    }
+
+    /**
      * Get alat by category
      */
     public function getAlatByKategori($kategoriId)

@@ -104,20 +104,24 @@
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
-            <a href="/users" class="sidebar-menu-item">
-                <i class="bi bi-people"></i>
-                Data User
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
+                <a href="/users" class="sidebar-menu-item">
+                    <i class="bi bi-people"></i>
+                    Data User
+                </a>
+            <?php endif; ?>
             <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
                 <a href="/alat" class="sidebar-menu-item">
                     <i class="bi bi-wrench"></i>
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
+                <a href="/peminjaman" class="sidebar-menu-item">
+                    <i class="bi bi-hand-index"></i>
+                    Peminjaman
+                </a>
+            <?php endif; ?>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -184,6 +188,7 @@
                 <div class="stat-number">0</div>
                 <div class="stat-label">Peminjaman Selesai</div>
             </div>
+            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
             <div class="stat-card">
                 <div class="stat-icon">
                     <i class="bi bi-people"></i>
@@ -198,6 +203,7 @@
                 <div class="stat-number">0</div>
                 <div class="stat-label">Total Selesai</div>
             </div>
+            <?php endif; ?>
         </div>
 
         <?php if (isset($error)): ?>

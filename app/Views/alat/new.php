@@ -6,6 +6,8 @@
     <title>Tambah Alat Baru - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
 </head>
 <body>
@@ -32,10 +34,12 @@
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
+                <a href="/peminjaman" class="sidebar-menu-item">
+                    <i class="bi bi-hand-index"></i>
+                    Peminjaman
+                </a>
+            <?php endif; ?>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -123,9 +127,57 @@
                             </h6>
 
                             <div class="mb-3">
+                                <label for="kode_alat" class="form-label">Kode Alat</label>
+                                <input type="text" class="form-control" id="kode_alat" name="kode_alat" placeholder="Contoh: LT001" required>
+                                <small class="form-text text-muted">Gunakan format yang konsisten untuk penomoran alat</small>
+                            </div>
+
+                            <div class="alert alert-warning d-flex align-items-start" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                                <div>
+                                    <strong>Perhatian:</strong> Kode alat tidak dapat diubah setelah disimpan.
+                                    Pastikan format dan penulisannya sudah benar sebelum melanjutkan.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="nama" class="form-label">Nama Alat</label>
                                 <input type="text" class="form-control" id="nama" name="nama" placeholder="Masukkan nama alat" required>
                                 <small class="form-text text-muted">Nama lengkap alat laboratorium</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="kategori_id" class="form-label">Kategori</label>
+                                <select class="form-control" id="kategori_id" name="kategori_id" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <?php if (!empty($kategoriList)): ?>
+                                        <?php foreach ($kategoriList as $kategori): ?>
+                                            <option value="<?= $kategori['id'] ?>">
+                                                <?= htmlspecialchars($kategori['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="">Tidak ada kategori tersedia</option>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="form-text text-muted">Kategori alat laboratorium</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="tipe_id" class="form-label">Tipe</label>
+                                <select class="form-control" id="tipe_id" name="tipe_id" required>
+                                    <option value="">Pilih Tipe</option>
+                                    <?php if (!empty($tipeList)): ?>
+                                        <?php foreach ($tipeList as $tipe): ?>
+                                            <option value="<?= $tipe['id'] ?>">
+                                                <?= htmlspecialchars($tipe['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="">Tidak ada tipe tersedia</option>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="form-text text-muted">Tipe atau spesifikasi alat</small>
                             </div>
 
                             <div class="mb-3">
@@ -188,6 +240,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             // Sidebar toggle functionality
@@ -211,6 +264,12 @@
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
+            });
+
+            $('#kategori_id, #tipe_id').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Pilih opsi'
             });
 
             // Image preview functionality

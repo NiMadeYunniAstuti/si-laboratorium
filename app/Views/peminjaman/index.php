@@ -23,10 +23,12 @@
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
-            <a href="/users" class="sidebar-menu-item">
-                <i class="bi bi-people"></i>
-                Data User
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
+                <a href="/users" class="sidebar-menu-item">
+                    <i class="bi bi-people"></i>
+                    Data User
+                </a>
+            <?php endif; ?>
             <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
                 <a href="/alat" class="sidebar-menu-item">
                     <i class="bi bi-wrench"></i>
@@ -118,87 +120,41 @@
               <thead>
                   <tr>
                       <th class="text-nowrap">NO</th>
-                      <th class="text-nowrap">NO PEMINJAMAN</th>
-                      <th class="text-nowrap">TIPE PEMINJAMAN</th>
-                      <th class="text-nowrap">ITEM</th>
-                      <th class="text-nowrap">SURAT</th>
+                      <th class="text-nowrap">PEMINJAM</th>
+                      <th class="text-nowrap">ALAT</th>
                       <th class="text-nowrap">TANGGAL PINJAM</th>
-                      <th class="text-nowrap">TANGGAL BERAKHIR</th>
+                      <th class="text-nowrap">TANGGAL KEMBALI</th>
                       <th class="text-nowrap">STATUS</th>
                   </tr>
               </thead>
               <tbody>
-                  <!-- Sample data rows - loan records -->
-                  <tr>
-                      <td>1</td>
-                      <td>TRX202412001</td>
-                      <td>Alat Laboratorium</td>
-                      <td>Mikroskop Digital (ALT001)</td>
-                      <td>
-                          <a href="#" class="btn btn-sm btn-outline-primary">
-                              <i class="bi bi-file-earmark-text"></i> Lihat
-                          </a>
-                      </td>
-                      <td>15/12/2024</td>
-                      <td>20/12/2024</td>
-                      <td><span class="badge bg-success">Selesai</span></td>
-                  </tr>
-                  <tr>
-                      <td>2</td>
-                      <td>TRX202412002</td>
-                      <td>Alat Laboratorium</td>
-                      <td>Sentrifuge (ALT002)</td>
-                      <td>
-                          <a href="#" class="btn btn-sm btn-outline-primary">
-                              <i class="bi bi-file-earmark-text"></i> Lihat
-                          </a>
-                      </td>
-                      <td>16/12/2024</td>
-                      <td>23/12/2024</td>
-                      <td><span class="badge bg-secondary">Dipinjam</span></td>
-                  </tr>
-                  <tr>
-                      <td>3</td>
-                      <td>TRX202412003</td>
-                      <td>Alat Laboratorium</td>
-                      <td>Timbangan Analitik (ALT003)</td>
-                      <td>
-                          <a href="#" class="btn btn-sm btn-outline-primary">
-                              <i class="bi bi-file-earmark-text"></i> Lihat
-                          </a>
-                      </td>
-                      <td>17/12/2024</td>
-                      <td>24/12/2024</td>
-                      <td><span class="badge bg-warning">Menunggu Persetujuan</span></td>
-                  </tr>
-                  <tr>
-                      <td>4</td>
-                      <td>TRX202412004</td>
-                      <td>Alat Laboratorium</td>
-                      <td>Timbangan Analitik (LT002)</td>
-                      <td>
-                          <a href="#" class="btn btn-sm btn-outline-primary">
-                              <i class="bi bi-file-earmark-text"></i> Lihat
-                          </a>
-                      </td>
-                      <td>14/12/2024</td>
-                      <td>21/12/2024</td>
-                      <td><span class="badge bg-secondary">Dipinjam</span></td>
-                  </tr>
-                  <tr>
-                      <td>5</td>
-                      <td>TRX202412005</td>
-                      <td>Alat Laboratorium</td>
-                      <td>Autoklaf (LT003)</td>
-                      <td>
-                          <a href="#" class="btn btn-sm btn-outline-primary">
-                              <i class="bi bi-file-earmark-text"></i> Lihat
-                          </a>
-                      </td>
-                      <td>13/12/2024</td>
-                      <td>20/12/2024</td>
-                      <td><span class="badge bg-danger">Ditolak</span></td>
-                  </tr>
+                  <?php if (!empty($peminjaman)): ?>
+                      <?php foreach ($peminjaman as $index => $item): ?>
+                      <tr>
+                          <td><?= $index + 1 ?></td>
+                          <td><?= htmlspecialchars($item['user_name'] ?? $item['name'] ?? 'Unknown') ?></td>
+                          <td>
+                              <?= htmlspecialchars($item['nama_alat'] ?? 'Unknown') ?>
+                              <?php if (!empty($item['kode_alat'])): ?>
+                                  <br><small class="text-muted">(<?= htmlspecialchars($item['kode_alat']) ?>)</small>
+                              <?php endif; ?>
+                          </td>
+                          <td><?= date('d/m/Y', strtotime($item['tanggal_pinjam'] ?? 'now')) ?></td>
+                          <td><?= date('d/m/Y', strtotime($item['tanggal_kembali'] ?? 'now')) ?></td>
+                          <td>
+                              <span class="badge bg-<?= match($item['status'] ?? 'PENDING') {
+                                  'SELESAI' => 'success',
+                                  'DIPINJAM' => 'secondary',
+                                  'PENDING' => 'warning',
+                                  'DITOLAK' => 'danger',
+                                  default => 'secondary'
+                              } ?>">
+                                  <?= htmlspecialchars($item['status'] ?? 'PENDING') ?>
+                              </span>
+                          </td>
+                      </tr>
+                      <?php endforeach; ?>
+                  <?php endif; ?>
               </tbody>
           </table>
                 </div>
@@ -260,8 +216,18 @@
                             next: "Selanjutnya",
                             previous: "Sebelumnya"
                         },
-                        emptyTable: "Tidak ada data tersedia dalam tabel",
+                        emptyTable: `<div class="text-center py-4">
+                            <i class="bi bi-inbox display-6 text-muted"></i>
+                            <div class="mt-2 text-muted">Tidak ada data tersedia dalam tabel</div>
+                        </div>`,
                         zeroRecords: "Tidak ditemukan data yang cocok"
+                    },
+                    drawCallback: function() {
+                        const api = this.api();
+                        const showPagination = api.data().count() > 0;
+                        $(api.table().container())
+                            .find('.dataTables_paginate')
+                            .toggle(showPagination);
                     }
                 });
             } else {

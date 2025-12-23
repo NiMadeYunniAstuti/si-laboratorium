@@ -33,10 +33,6 @@
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -118,85 +114,52 @@
               <thead>
                   <tr>
                       <th>NO</th>
-                      <!-- <th>NIK</th> -->
                       <th>NAMA</th>
                       <th>EMAIL</th>
-                      <th>NO TELEFON</th>
                       <th>STATUS</th>
                       <th>ACTION</th>
                   </tr>
               </thead>
               <tbody>
-                  <!-- Sample data rows - these will be replaced with actual data -->
-                  <tr>
-                      <td>1</td>
-                      <!-- <td>1234567890123456</td> -->
-                      <td>Admin User</td>
-                      <td>admin@lbms.com</td>
-                      <td>08123456789</td>
-                      <td><span class="badge bg-success">Active</span></td>
-                      <td>
-                          <div class="d-flex gap-2">
-                              <a href="/users/1" class="btn btn-sm btn-outline-primary flex-shrink-0">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                              <div class="btn-group d-flex flex-nowrap" role="group">
-                                  <button class="btn btn-sm btn-outline-danger toggle-status flex-shrink-0" data-id="1">
-                                      <i class="bi bi-pause"></i> Nonaktif
-                                  </button>
-                                  <button class="btn btn-sm btn-outline-dark blacklist-user flex-shrink-0" data-id="1">
-                                      <i class="bi bi-shield-x"></i> Blacklist
-                                  </button>
+                  <?php if (!empty($users)): ?>
+                      <?php $currentUserId = $user['id'] ?? null; ?>
+                      <?php foreach ($users as $index => $userItem): ?>
+                      <?php $statusUpper = strtoupper($userItem['status'] ?? 'ACTIVE'); ?>
+                      <tr>
+                          <td><?= $index + 1 ?></td>
+                          <td><?= htmlspecialchars($userItem['name'] ?? '') ?></td>
+                          <td><?= htmlspecialchars($userItem['email'] ?? '') ?></td>
+                          <td>
+                              <span class="badge bg-<?= $statusUpper === 'ACTIVE' ? 'success' : 'danger' ?>">
+                                  <?= $statusUpper === 'ACTIVE' ? 'Active' : 'Nonaktif' ?>
+                              </span>
+                          </td>
+                          <td>
+                              <div class="d-flex gap-2">
+                                  <a href="/users/<?= $userItem['id'] ?>" class="btn btn-sm btn-outline-primary flex-shrink-0">
+                                      <i class="bi bi-eye"></i> Detail
+                                  </a>
+                                  <?php if (($userItem['id'] ?? null) !== $currentUserId): ?>
+                                      <div class="btn-group d-flex flex-nowrap" role="group">
+                                          <button class="btn btn-sm btn-outline-<?= $statusUpper === 'ACTIVE' ? 'danger' : 'success' ?> toggle-status flex-shrink-0"
+                                                  data-id="<?= $userItem['id'] ?>"
+                                                  data-status="<?= $statusUpper === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' ?>">
+                                              <i class="bi bi-<?= $statusUpper === 'ACTIVE' ? 'pause' : 'play' ?>"></i>
+                                              <?= $statusUpper === 'ACTIVE' ? 'Nonaktif' : 'Aktifkan' ?>
+                                          </button>
+                                          <button class="btn btn-sm btn-outline-dark blacklist-user flex-shrink-0"
+                                                  data-id="<?= $userItem['id'] ?>"
+                                                  data-status="BLACKLIST"
+                                                  <?= $statusUpper === 'BLACKLIST' ? 'disabled' : '' ?>>
+                                              <i class="bi bi-shield-x"></i> Blacklist
+                                          </button>
+                                      </div>
+                                  <?php endif; ?>
                               </div>
-                          </div>
-                      </td>
-                  </tr>
-                  <tr>
-                      <td>2</td>
-                      <!-- <td>2345678901234567</td> -->
-                      <td>John Doe</td>
-                      <td>john.doe@example.com</td>
-                      <td>08234567890</td>
-                      <td><span class="badge bg-success">Active</span></td>
-                      <td>
-                          <div class="d-flex gap-2">
-                              <a href="/users/2" class="btn btn-sm btn-outline-primary flex-shrink-0">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                              <div class="btn-group d-flex flex-nowrap" role="group">
-                                  <button class="btn btn-sm btn-outline-danger toggle-status flex-shrink-0" data-id="2">
-                                      <i class="bi bi-pause"></i> Nonaktif
-                                  </button>
-                                  <button class="btn btn-sm btn-outline-dark blacklist-user flex-shrink-0" data-id="2">
-                                      <i class="bi bi-shield-x"></i> Blacklist
-                                  </button>
-                              </div>
-                          </div>
-                      </td>
-                  </tr>
-                  <tr>
-                      <td>3</td>
-                      <!-- <td>3456789012345678</td> -->
-                      <td>Jane Smith</td>
-                      <td>jane.smith@example.com</td>
-                      <td>08345678901</td>
-                      <td><span class="badge bg-danger">Nonaktif</span></td>
-                      <td>
-                          <div class="d-flex gap-2">
-                              <a href="/users/3" class="btn btn-sm btn-outline-primary flex-shrink-0">
-                                  <i class="bi bi-eye"></i> Detail
-                              </a>
-                              <div class="btn-group d-flex flex-nowrap" role="group">
-                                  <button class="btn btn-sm btn-outline-success toggle-status flex-shrink-0" data-id="3">
-                                      <i class="bi bi-play"></i> Aktifkan
-                                  </button>
-                                  <button class="btn btn-sm btn-outline-dark blacklist-user flex-shrink-0" data-id="3">
-                                      <i class="bi bi-shield-x"></i> Blacklist
-                                  </button>
-                              </div>
-                          </div>
-                      </td>
-                  </tr>
+                          </td>
+                      </tr>
+                      <?php endforeach; ?>
+                  <?php endif; ?>
               </tbody>
           </table>
                 </div>
@@ -258,8 +221,18 @@
                             next: "Selanjutnya",
                             previous: "Sebelumnya"
                         },
-                        emptyTable: "Tidak ada data tersedia dalam tabel",
+                        emptyTable: `<div class="text-center py-4">
+                            <i class="bi bi-inbox display-6 text-muted"></i>
+                            <div class="mt-2 text-muted">Tidak ada data tersedia dalam tabel</div>
+                        </div>`,
                         zeroRecords: "Tidak ditemukan data yang cocok"
+                    },
+                    drawCallback: function() {
+                        const api = this.api();
+                        const showPagination = api.data().count() > 0;
+                        $(api.table().container())
+                            .find('.dataTables_paginate')
+                            .toggle(showPagination);
                     }
                 });
             } else {
@@ -284,33 +257,38 @@
                 }
             });
 
-            // Toggle status button click handler
-            $('.toggle-status').on('click', function() {
+            // Update status button click handler
+            $('.toggle-status, .blacklist-user').on('click', function() {
                 const userId = $(this).data('id');
-                const actionText = $(this).text().trim();
+                const status = $(this).data('status');
+                const message = status === 'BLACKLIST'
+                    ? 'Apakah Anda yakin ingin mem-blacklist user ini? User tidak akan dapat melakukan peminjaman.'
+                    : (status === 'ACTIVE'
+                        ? 'Apakah Anda yakin ingin mengaktifkan user ini?'
+                        : 'Apakah Anda yakin ingin menonaktifkan user ini?');
 
-                if (actionText === 'Nonaktif') {
-                    // Currently active, will deactivate
-                    if (confirm('Apakah Anda yakin ingin menonaktifkan user ini?')) {
-                        // TODO: Call API to deactivate user
-                        alert('User berhasil dinonaktifkan');
-                    }
-                } else if (actionText === 'Aktifkan') {
-                    // Currently inactive, will activate
-                    if (confirm('Apakah Anda yakin ingin mengaktifkan user ini?')) {
-                        // TODO: Call API to activate user
-                        alert('User berhasil diaktifkan');
-                    }
+                if (!confirm(message)) {
+                    return;
                 }
-            });
 
-            // Blacklist user button click handler
-            $('.blacklist-user').on('click', function() {
-                const userId = $(this).data('id');
-                if (confirm('Apakah Anda yakin ingin mem-blacklist user ini? User tidak akan dapat melakukan peminjaman.')) {
-                    // TODO: Call API to blacklist user
-                    alert('User berhasil di-blacklist');
-                }
+                fetch(`/users/${userId}/update/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                            return;
+                        }
+                        alert(data.message || 'Gagal memperbarui status user');
+                    })
+                    .catch(() => {
+                        alert('Terjadi kesalahan saat memperbarui status user');
+                    });
             });
         });
     </script>

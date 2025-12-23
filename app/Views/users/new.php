@@ -32,10 +32,6 @@
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -137,11 +133,6 @@
                                 <label for="email" class="form-label">Email</label>
                                 <input type="email" class="form-control" id="email" name="email" placeholder="user@example.com" required>
                             </div>
-
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">No Telepon</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" placeholder="08123456789" required>
-                            </div>
                         </div>
 
                         <div class="col-md-6">
@@ -162,16 +153,10 @@
                             <div class="mb-3">
                                 <label for="password" class="form-label">Password</label>
                                 <div class="input-group">
-                                    <input type="password" class="form-control" id="password" name="password" placeholder="Minimal 8 karakter" required>
+                                    <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan password" required>
                                     <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                         <i class="bi bi-eye" id="passwordIcon"></i>
                                     </button>
-                                </div>
-                                <div class="mt-2">
-                                    <small class="form-text text-muted">Kekuatan password:</small>
-                                    <div class="progress" style="height: 5px;">
-                                        <div class="progress-bar" id="passwordStrengthBar" role="progressbar" style="width: 0%"></div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -259,30 +244,6 @@
                 }
             });
 
-            // Password strength checker
-            $('#password').on('input', function() {
-                const password = $(this).val();
-                const strengthBar = $('#passwordStrengthBar');
-                let strength = 0;
-
-                if (password.length >= 8) strength += 25;
-                if (password.match(/[a-z]+/)) strength += 25;
-                if (password.match(/[A-Z]+/)) strength += 25;
-                if (password.match(/[0-9]+/)) strength += 25;
-
-                strengthBar.css('width', strength + '%');
-
-                if (strength <= 25) {
-                    strengthBar.removeClass().addClass('progress-bar bg-danger');
-                } else if (strength <= 50) {
-                    strengthBar.removeClass().addClass('progress-bar bg-warning');
-                } else if (strength <= 75) {
-                    strengthBar.removeClass().addClass('progress-bar bg-info');
-                } else {
-                    strengthBar.removeClass().addClass('progress-bar bg-success');
-                }
-            });
-
             // Form validation
             $('#tambahUserForm').on('submit', function(e) {
                 const password = $('#password').val();
@@ -291,12 +252,6 @@
                 if (password !== confirmPassword) {
                     e.preventDefault();
                     alert('Password dan konfirmasi password tidak cocok!');
-                    return false;
-                }
-
-                if (password.length < 8) {
-                    e.preventDefault();
-                    alert('Password minimal harus 8 karakter!');
                     return false;
                 }
 

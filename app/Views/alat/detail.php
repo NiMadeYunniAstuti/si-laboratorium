@@ -32,10 +32,12 @@
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
+                <a href="/peminjaman" class="sidebar-menu-item">
+                    <i class="bi bi-hand-index"></i>
+                    Peminjaman
+                </a>
+            <?php endif; ?>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings

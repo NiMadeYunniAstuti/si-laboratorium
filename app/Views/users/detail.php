@@ -32,10 +32,6 @@
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -123,7 +119,7 @@
                         <p class="text-muted"><?= htmlspecialchars($userDetail['role'] ?? 'USER') ?></p>
 
                         <div class="mb-3">
-                            <?php if (($userDetail['status'] ?? 'active') === 'active'): ?>
+                            <?php if (strtoupper($userDetail['status'] ?? 'ACTIVE') === 'ACTIVE'): ?>
                                 <span class="badge bg-success">Aktif</span>
                             <?php else: ?>
                                 <span class="badge bg-danger">Non-aktif</span>
@@ -131,17 +127,33 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editUserModal">
+                            <a class="btn btn-outline-primary" href="/users/<?= $userDetail['id'] ?? '' ?>/edit">
                                 <i class="bi bi-pencil me-2"></i>Edit User
-                            </button>
-                            <?php if (($userDetail['status'] ?? 'active') === 'active'): ?>
-                                <button class="btn btn-outline-danger" onclick="toggleUserStatus('<?= $userDetail['id'] ?? '' ?>')">
-                                    <i class="bi bi-person-dash me-2"></i>Non-aktifkan
-                                </button>
-                            <?php else: ?>
-                                <button class="btn btn-outline-success" onclick="toggleUserStatus('<?= $userDetail['id'] ?? '' ?>')">
-                                    <i class="bi bi-person-check me-2"></i>Aktifkan
-                                </button>
+                            </a>
+                            <?php if (($userDetail['id'] ?? null) !== ($user['id'] ?? null)): ?>
+                                <?php $detailStatus = strtoupper($userDetail['status'] ?? 'ACTIVE'); ?>
+                                <div class="btn-group" role="group" aria-label="User status actions">
+                                    <?php if ($detailStatus === 'INACTIVE'): ?>
+                                        <button class="btn btn-outline-success status-action"
+                                                data-id="<?= $userDetail['id'] ?? '' ?>"
+                                                data-status="ACTIVE">
+                                            <i class="bi bi-person-check me-2"></i>Aktifkan
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn btn-outline-danger status-action"
+                                                data-id="<?= $userDetail['id'] ?? '' ?>"
+                                                data-status="INACTIVE"
+                                                <?= $detailStatus === 'INACTIVE' ? 'disabled' : '' ?>>
+                                            <i class="bi bi-person-dash me-2"></i>Non-aktifkan
+                                        </button>
+                                    <?php endif; ?>
+                                    <button class="btn btn-outline-dark status-action"
+                                            data-id="<?= $userDetail['id'] ?? '' ?>"
+                                            data-status="BLACKLIST"
+                                            <?= $detailStatus === 'BLACKLIST' ? 'disabled' : '' ?>>
+                                        <i class="bi bi-shield-x me-2"></i>Blacklist
+                                    </button>
+                                </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -278,8 +290,9 @@
                                     <div class="mb-3">
                                         <label for="editStatus" class="form-label">Status</label>
                                         <select class="form-control" id="editStatus" name="status" required>
-                                            <option value="active" <?= ($userDetail['status'] ?? '') === 'active' ? 'selected' : '' ?>>Aktif</option>
-                                            <option value="inactive" <?= ($userDetail['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Non-aktif</option>
+                                            <option value="ACTIVE" <?= strtoupper($userDetail['status'] ?? '') === 'ACTIVE' ? 'selected' : '' ?>>Aktif</option>
+                                            <option value="INACTIVE" <?= strtoupper($userDetail['status'] ?? '') === 'INACTIVE' ? 'selected' : '' ?>>Non-aktif</option>
+                                            <option value="BLACKLIST" <?= strtoupper($userDetail['status'] ?? '') === 'BLACKLIST' ? 'selected' : '' ?>>Blacklist</option>
                                         </select>
                                     </div>
                                     <div class="mb-3">
@@ -328,12 +341,37 @@
                 toggleSidebar();
             });
 
-            // Toggle user status
-            window.toggleUserStatus = function(userId) {
-                if (confirm('Apakah Anda yakin ingin mengubah status user ini?')) {
-                    window.location.href = '/users/toggle-status/' + userId;
+            // Update user status (inactive/blacklist)
+            $('.status-action').on('click', function() {
+                const userId = $(this).data('id');
+                const status = $(this).data('status');
+                const message = status === 'BLACKLIST'
+                    ? 'Apakah Anda yakin ingin mem-blacklist user ini? User tidak akan dapat melakukan peminjaman.'
+                    : 'Apakah Anda yakin ingin menonaktifkan user ini?';
+
+                if (!confirm(message)) {
+                    return;
                 }
-            };
+
+                fetch(`/users/${userId}/update/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                            return;
+                        }
+                        alert(data.message || 'Gagal memperbarui status user');
+                    })
+                    .catch(() => {
+                        alert('Terjadi kesalahan saat memperbarui status user');
+                    });
+            });
 
             // Form validation
             $('#editUserForm').on('submit', function(e) {

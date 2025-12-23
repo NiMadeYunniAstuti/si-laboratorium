@@ -27,6 +27,7 @@ claude-code/
 .anthropic/
 ai-assistant/
 copilot/
+.claude/
 
 node_modules/
 vendor/
@@ -41,6 +42,7 @@ yarn-error.log*
 
 uploads/
 public/uploads/
+public/upload/
 assets/uploads/
 
 tmp/
@@ -102,3 +104,7 @@ htpasswd
 *.pem
 *.key
 *.crt
+
+# Public folder - ignore user-generated content only
+public/upload/
+public/uploads/
