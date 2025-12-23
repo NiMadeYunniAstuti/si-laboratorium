@@ -180,18 +180,15 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -199,15 +196,12 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Mobile sidebar handling
 
-            // Initialize Select2 for global search
             $('#globalSearch').select2({
                 theme: 'bootstrap-5',
                 placeholder: 'Search...',
@@ -215,13 +209,11 @@
                 minimumInputLength: 2,
                 ajax: {
                     url: function() {
-                        // Placeholder - will be configured later with actual search endpoint
                         return '/api/search';
                     },
                     dataType: 'json',
                     delay: 250,
                     processResults: function(data) {
-                        // Placeholder - will be configured later with actual data processing
                         return {
                             results: data.items || []
                         };
@@ -232,33 +224,27 @@
                     if (item.loading) {
                         return 'Searching...';
                     }
-                    // Placeholder - will be configured later with actual display template
                     return item.text || item.name || item.title;
                 },
                 templateSelection: function(item) {
-                    // Placeholder - will be configured later with actual selection template
                     return item.text || item.name || item.title || 'Search...';
                 }
             });
 
-            // Handle search selection
             $('#globalSearch').on('select2:select', function(e) {
                 const data = e.params.data;
                 if (data && data.url) {
                     window.location.href = data.url;
                 }
             });
-            // Mobile sidebar handling
             if ($(window).width() <= 768) {
                 $('#sidebar').addClass('collapsed');
                 $('#topNavbar').addClass('sidebar-collapsed');
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Handle window resize
             $(window).on('resize', function() {
                 if ($(window).width() > 768) {
-                    // Restore desktop state
                     const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                     if (!sidebarCollapsed) {
                         $('#sidebar').removeClass('collapsed');
@@ -266,14 +252,12 @@
                         $('#mainContent').removeClass('sidebar-collapsed');
                     }
                 } else {
-                    // Always collapse sidebar on mobile
                     $('#sidebar').addClass('collapsed', 'mobile-active');
                     $('#topNavbar').addClass('sidebar-collapsed');
                     $('#mainContent').addClass('sidebar-collapsed');
                 }
             });
 
-            // Form validation
             $('#editUserForm').on('submit', function(e) {
                 const name = $('#name').val().trim();
                 const email = $('#email').val().trim();

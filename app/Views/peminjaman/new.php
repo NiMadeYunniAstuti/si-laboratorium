@@ -215,7 +215,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
@@ -225,7 +224,6 @@
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -247,7 +245,6 @@
                 });
             }
 
-            // Set minimum date for tanggal_pinjam (today, local time)
             const now = new Date();
             const pad = (value) => String(value).padStart(2, '0');
             const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -255,20 +252,17 @@
             $('#tanggal_pinjam').attr('min', minDateTime);
             $('#tanggal_kembali').attr('min', minDateTime);
 
-            // Update minimum tanggal_kembali based on tanggal_pinjam
             $('#tanggal_pinjam').on('change', function() {
                 const pinjamDate = new Date($(this).val());
-                const minKembali = new Date(pinjamDate.getTime() + (24 * 60 * 60 * 1000)); // +1 day
+                const minKembali = new Date(pinjamDate.getTime() + (24 * 60 * 60 * 1000)); 
                 const minKembaliStr = `${minKembali.getFullYear()}-${pad(minKembali.getMonth() + 1)}-${pad(minKembali.getDate())}T${pad(minKembali.getHours())}:${pad(minKembali.getMinutes())}`;
                 $('#tanggal_kembali').attr('min', minKembaliStr);
 
-                // Set default tanggal_kembali to 7 days from tanggal_pinjam
                 const defaultKembali = new Date(pinjamDate.getTime() + (7 * 24 * 60 * 60 * 1000));
                 const defaultKembaliStr = `${defaultKembali.getFullYear()}-${pad(defaultKembali.getMonth() + 1)}-${pad(defaultKembali.getDate())}T${pad(defaultKembali.getHours())}:${pad(defaultKembali.getMinutes())}`;
                 $('#tanggal_kembali').val(defaultKembaliStr);
             });
 
-            // Form validation
             $('#tambahPeminjamanForm').on('submit', function(e) {
                 const tanggalPinjam = new Date($('#tanggal_pinjam').val());
                 const tanggalKembali = new Date($('#tanggal_kembali').val());
@@ -276,7 +270,6 @@
                 todayDateOnly.setHours(0, 0, 0, 0);
                 const pinjamDateOnly = new Date(tanggalPinjam.getFullYear(), tanggalPinjam.getMonth(), tanggalPinjam.getDate());
 
-                // Validate dates
                 if (isNaN(tanggalPinjam.getTime()) || pinjamDateOnly < todayDateOnly) {
                     e.preventDefault();
                     alert('Tanggal pinjam tidak boleh kurang dari hari ini');
@@ -292,7 +285,6 @@
                 return true;
             });
 
-            // Mobile sidebar handling
             if ($(window).width() <= 768) {
                 $('#sidebar').addClass('collapsed');
                 $('#topNavbar').addClass('sidebar-collapsed');

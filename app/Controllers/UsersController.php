@@ -28,7 +28,6 @@ class UsersController extends BaseController
      */
     public function dashboard()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses dashboard';
             $this->redirect('/login');
@@ -63,10 +62,8 @@ class UsersController extends BaseController
      */
     public function getDashboardStats()
     {
-        // Set JSON response header
         header('Content-Type: application/json');
 
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             echo json_encode(['error' => 'Unauthorized']);
             return;
@@ -75,7 +72,6 @@ class UsersController extends BaseController
         try {
             $stats = [];
 
-            // Get statistics from models using the new structure
             $alatStats = $this->alatModel->getAlatStatistics();
             $stats['totalAlat'] = $alatStats['total'] ?? 0;
             $stats['alatTersedia'] = $alatStats['by_status']['tersedia'] ?? 0;
@@ -88,7 +84,6 @@ class UsersController extends BaseController
             $stats['totalUsers'] = $userStats['total'] ?? 0;
             $stats['usersAktif'] = $userStats['by_status']['active'] ?? 0;
 
-            // Get recent activities
             $stats['recentPeminjaman'] = $this->peminjamanModel->getRecentPeminjaman(5);
             $stats['recentUsers'] = $this->userModel->getRecentUsers(5);
 
@@ -147,7 +142,6 @@ class UsersController extends BaseController
         $email = trim($_POST['email'] ?? '');
 
         try {
-            // Validate input
             if (empty($name)) {
                 $_SESSION['error'] = 'Nama tidak boleh kosong';
                 $this->redirect('/dashboard/profile');
@@ -160,21 +154,18 @@ class UsersController extends BaseController
                 return;
             }
 
-            // Check if email exists for other user
             if ($this->userModel->emailExists($email, $userId)) {
                 $_SESSION['error'] = 'Email sudah digunakan oleh pengguna lain';
                 $this->redirect('/dashboard/profile');
                 return;
             }
 
-            // Update user
             $userData = [
                 'name' => htmlspecialchars($name),
                 'email' => strtolower($email)
             ];
 
             if ($this->userModel->update($userId, $userData)) {
-                // Update session
                 $_SESSION['user_name'] = $userData['name'];
                 $_SESSION['user_email'] = $userData['email'];
 
@@ -207,7 +198,6 @@ class UsersController extends BaseController
         $confirmPassword = $_POST['confirm_password'] ?? '';
 
         try {
-            // Validate input
             if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
                 $_SESSION['error'] = 'Semua field password harus diisi';
                 $this->redirect('/dashboard/profile');
@@ -226,7 +216,6 @@ class UsersController extends BaseController
                 return;
             }
 
-            // Get current user data
             $currentUser = $this->userModel->find($userId);
             if (!$currentUser) {
                 $_SESSION['error'] = 'User tidak ditemukan';
@@ -234,14 +223,12 @@ class UsersController extends BaseController
                 return;
             }
 
-            // Verify current password
             if (!password_verify($currentPassword, $currentUser['password_hash'])) {
                 $_SESSION['error'] = 'Password saat ini salah';
                 $this->redirect('/dashboard/profile');
                 return;
             }
 
-            // Update password
             if ($this->userModel->updatePassword($userId, $newPassword)) {
                 $_SESSION['success'] = 'Password berhasil diubah';
             } else {

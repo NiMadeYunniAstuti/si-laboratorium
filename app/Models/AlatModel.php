@@ -45,12 +45,10 @@ class AlatModel extends BaseModel
             $params['tipe_id'] = $tipeId;
         }
 
-        // Get total count
         $countSql = "SELECT COUNT(*) as total FROM {$this->table} a $whereClause";
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
-        // Get records with joins
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
                 LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
@@ -252,29 +250,24 @@ class AlatModel extends BaseModel
     {
         $stats = [];
 
-        // Total alat
         $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total'] = $result['total'] ?? 0;
 
-        // By status
         $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY status";
         $statusResults = $this->db->fetchAll($sql);
         foreach ($statusResults as $row) {
             $stats['by_status'][strtolower($row['status'])] = $row['total'];
         }
 
-        // By condition
         $sql = "SELECT kondisi, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY kondisi";
         $conditionResults = $this->db->fetchAll($sql);
         foreach ($conditionResults as $row) {
             $stats['by_condition'][strtolower($row['kondisi'])] = $row['total'];
         }
 
-        // By category
         $stats['by_kategori'] = $this->getAlatCountByKategori();
 
-        // Total quantity (sum of all jumlah)
         $sql = "SELECT SUM(jumlah) as total_quantity FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total_quantity'] = $result['total_quantity'] ?? 0;

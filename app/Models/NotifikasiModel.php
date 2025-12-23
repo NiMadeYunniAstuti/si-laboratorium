@@ -21,7 +21,6 @@ class NotifikasiModel extends BaseModel
         $this->db->beginTransaction();
 
         try {
-            // Create notification
             $sql = "INSERT INTO {$this->table} (title, description, peminjaman_id, is_read, created_at)
                     VALUES (:title, :description, :peminjaman_id, FALSE, NOW())";
             $this->db->query($sql, [
@@ -32,7 +31,6 @@ class NotifikasiModel extends BaseModel
 
             $notificationId = $this->db->lastInsertId();
 
-            // Assign to users
             if (!empty($userIds)) {
                 foreach ($userIds as $userId) {
                     $sql = "INSERT INTO notifikasi_users (notifikasi_id, user_id, created_at)
@@ -175,7 +173,6 @@ class NotifikasiModel extends BaseModel
         $this->db->beginTransaction();
 
         try {
-            // Create notification
             $sql = "INSERT INTO {$this->table} (title, description, peminjaman_id, is_read, created_at)
                     VALUES (:title, :description, NULL, FALSE, NOW())";
             $this->db->query($sql, [
@@ -185,7 +182,6 @@ class NotifikasiModel extends BaseModel
 
             $notificationId = $this->db->lastInsertId();
 
-            // Assign to all users or users with specific role
             $userWhere = $role ? "WHERE role = :role AND deleted_at IS NULL" : "WHERE deleted_at IS NULL";
             $userParams = $role ? ['role' => $role] : [];
 
@@ -217,7 +213,6 @@ class NotifikasiModel extends BaseModel
     {
         $offset = ($page - 1) * $limit;
 
-        // Get total count
         $countSql = "SELECT COUNT(*) as total
                      FROM {$this->table} n
                      INNER JOIN notifikasi_users nu ON n.id = nu.notifikasi_id
@@ -225,7 +220,6 @@ class NotifikasiModel extends BaseModel
         $countResult = $this->db->fetch($countSql, ['user_id' => $userId]);
         $total = $countResult['total'] ?? 0;
 
-        // Get records
         $sql = "SELECT n.*, nu.is_read as user_read, nu.created_at as assigned_at
                 FROM {$this->table} n
                 INNER JOIN notifikasi_users nu ON n.id = nu.notifikasi_id
@@ -271,24 +265,20 @@ class NotifikasiModel extends BaseModel
     {
         $stats = [];
 
-        // Total notifications
         $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total'] = $result['total'] ?? 0;
 
-        // By read status
         $sql = "SELECT is_read, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY is_read";
         $statusResults = $this->db->fetchAll($sql);
         foreach ($statusResults as $row) {
             $stats['by_read_status'][$row['is_read'] ? 'read' : 'unread'] = $row['total'];
         }
 
-        // Linked to peminjaman
         $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE peminjaman_id IS NOT NULL AND deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['linked_to_peminjaman'] = $result['total'] ?? 0;
 
-        // Created today
         $sql = "SELECT COUNT(*) as total FROM {$this->table}
                 WHERE DATE(created_at) = CURDATE() AND deleted_at IS NULL";
         $result = $this->db->fetch($sql);

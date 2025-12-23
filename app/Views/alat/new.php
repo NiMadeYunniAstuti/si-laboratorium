@@ -251,7 +251,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
@@ -261,7 +260,6 @@
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -280,13 +278,11 @@
                 placeholder: 'Pilih opsi'
             });
 
-            // Image preview functionality
             $('#gambar').on('change', function(e) {
                 const file = e.target.files[0];
                 const preview = $('#imagePreview');
 
                 if (file) {
-                    // Validate file size (2MB)
                     if (file.size > 2 * 1024 * 1024) {
                         alert('Ukuran file maksimal 2MB');
                         $(this).val('');
@@ -294,7 +290,6 @@
                         return;
                     }
 
-                    // Validate file type
                     if (!file.type.match('image.*')) {
                         alert('Hanya file gambar yang diperbolehkan');
                         $(this).val('');
@@ -302,7 +297,6 @@
                         return;
                     }
 
-                    // Show preview
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         preview.html(`
@@ -318,13 +312,11 @@
                 }
             });
 
-            // Remove image function
             window.removeImage = function() {
                 $('#gambar').val('');
                 $('#imagePreview').empty();
             };
 
-            // Form validation
             $('#tambahAlatForm').on('submit', function(e) {
                 const tahun = parseInt($('#tahun_pembelian').val());
                 const tahunSekarang = new Date().getFullYear();
@@ -345,7 +337,6 @@
                 return true;
             });
 
-            // Mobile sidebar handling
             if ($(window).width() <= 768) {
                 $('#sidebar').addClass('collapsed');
                 $('#topNavbar').addClass('sidebar-collapsed');

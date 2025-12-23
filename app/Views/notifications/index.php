@@ -241,7 +241,6 @@
     <script src="/assets/js/dashboard.js"></script>
     <script>
 
-        // Mark notification as read
         document.querySelectorAll('.mark-read-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const notificationId = this.dataset.id;
@@ -261,7 +260,6 @@
             });
         });
 
-        // Delete notification
         document.querySelectorAll('.delete-notification-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const notificationId = this.dataset.id;
@@ -283,7 +281,6 @@
                         item.classList.remove('unread');
                         item.dataset.read = '1';
 
-                        // Remove mark read button
                         const markBtn = item.querySelector('.mark-read-btn');
                         if (markBtn) {
                             markBtn.remove();
@@ -329,7 +326,6 @@
     </script>
 
   <?php
-    // Helper functions for notification display
     function getNotificationIcon($title) {
         $title = strtolower($title);
 

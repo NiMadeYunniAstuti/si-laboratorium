@@ -17,7 +17,6 @@ class BaseController
      */
     protected function view($view, $data = [])
     {
-        // Add common data
         $data['app_name'] = Config::APP_NAME;
         $data['app_version'] = Config::APP_VERSION;
         $data['current_route'] = $this->router->getCurrentRoute();
@@ -202,7 +201,6 @@ class BaseController
     protected function requireAuth()
     {
         if (!$this->isLoggedIn()) {
-            // User is not authenticated, redirect to logout to clean up session
             $this->redirect('/logout');
         }
     }

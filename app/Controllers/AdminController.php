@@ -28,7 +28,6 @@ class AdminController extends BaseController
      */
     protected function view($view, $data = [])
     {
-        // Add unread notification count if user is logged in
         $userId = $_SESSION['user_id'] ?? null;
         if ($userId) {
             try {
@@ -41,7 +40,6 @@ class AdminController extends BaseController
             $data['unreadNotificationCount'] = 0;
         }
 
-        // Call parent view method
         parent::view($view, $data);
     }
 
@@ -50,14 +48,12 @@ class AdminController extends BaseController
      */
     public function dashboard()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses dashboard';
             $this->redirect('/login');
             return;
         }
 
-        // Get current user data
         $user = $this->getUser();
         $data = [
             'title' => 'Dashboard - LBMS',
@@ -70,7 +66,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Get dashboard statistics
         try {
             $stats = $this->getDashboardStats();
             $data = array_merge($data, $stats);
@@ -79,12 +74,10 @@ class AdminController extends BaseController
             $data['stats'] = $this->getDefaultStats();
         }
 
-        // Get recent peminjaman data
         try {
             $recentPeminjaman = $this->peminjamanModel->getRecentPeminjaman(10);
             $data['recentPeminjaman'] = $recentPeminjaman;
 
-            // Debug logging
             error_log("Recent peminjaman count: " . count($recentPeminjaman));
             if (!empty($recentPeminjaman)) {
                 error_log("First peminjaman record: " . print_r($recentPeminjaman[0], true));
@@ -94,7 +87,6 @@ class AdminController extends BaseController
             $data['recentPeminjaman'] = [];
         }
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -107,13 +99,10 @@ class AdminController extends BaseController
     private function getDashboardStats()
     {
         try {
-            // Get alat statistics
             $alatStats = $this->alatModel->getAlatStatistics();
 
-            // Get user statistics
             $userStats = $this->userModel->getUserStatistics();
 
-            // Get peminjaman statistics
             $peminjamanStats = $this->peminjamanModel->getPeminjamanStatistics();
 
             return [
@@ -153,7 +142,6 @@ class AdminController extends BaseController
     {
         header('Content-Type: application/json');
 
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             echo json_encode(['error' => 'Unauthorized']);
             return;
@@ -183,11 +171,6 @@ class AdminController extends BaseController
     {
         header('Content-Type: application/json');
 
-        // Authentication disabled for now
-        // if (!$this->isLoggedIn()) {
-        //     echo json_encode(['error' => 'Unauthorized']);
-        //     return;
-        // }
 
         try {
             $stats = $this->getDashboardStats();
@@ -252,7 +235,6 @@ class AdminController extends BaseController
         $email = trim($_POST['email'] ?? '');
 
         try {
-            // Validate input
             if (empty($name)) {
                 $_SESSION['error'] = 'Nama tidak boleh kosong';
                 $this->redirect('/settings/profile');
@@ -265,21 +247,18 @@ class AdminController extends BaseController
                 return;
             }
 
-            // Check if email exists for other user
             if ($this->userModel->emailExists($email, $userId)) {
                 $_SESSION['error'] = 'Email sudah digunakan oleh pengguna lain';
                 $this->redirect('/settings/profile');
                 return;
             }
 
-            // Update user
             $userData = [
                 'name' => htmlspecialchars($name),
                 'email' => strtolower($email)
             ];
 
             if ($this->userModel->update($userId, $userData)) {
-                // Update session
                 $_SESSION['user_name'] = $userData['name'];
                 $_SESSION['user_email'] = $userData['email'];
 
@@ -312,7 +291,6 @@ class AdminController extends BaseController
         $confirmPassword = $_POST['confirm_password'] ?? '';
 
         try {
-            // Validate input
             if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
                 $_SESSION['error'] = 'Semua field harus diisi';
                 $this->redirect('/dashboard/profile');
@@ -331,7 +309,6 @@ class AdminController extends BaseController
                 return;
             }
 
-            // Get user to verify current password
             $user = $this->userModel->find($userId);
             if (!$user) {
                 $_SESSION['error'] = 'Pengguna tidak ditemukan';
@@ -339,14 +316,12 @@ class AdminController extends BaseController
                 return;
             }
 
-            // Verify current password
             if (!password_verify($currentPassword, $user['password_hash'])) {
                 $_SESSION['error'] = 'Password saat ini tidak benar';
                 $this->redirect('/dashboard/profile');
                 return;
             }
 
-            // Update password
             if ($this->userModel->updatePassword($userId, $newPassword)) {
                 $_SESSION['success'] = 'Password berhasil diubah';
             } else {
@@ -366,7 +341,6 @@ class AdminController extends BaseController
      */
     public function users()
     {
-        // Check if user is admin
         if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
             $_SESSION['error'] = 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.';
             $this->redirect('/dashboard');
@@ -419,7 +393,6 @@ class AdminController extends BaseController
             $confirmPassword = $_POST['confirmPassword'] ?? '';
             $role = $_POST['role'] ?? 'USER';
 
-            // Validation
             if (empty($name) || empty($email) || empty($password)) {
                 $_SESSION['error'] = 'Semua field wajib diisi';
                 $this->redirect('/users/new');
@@ -444,7 +417,6 @@ class AdminController extends BaseController
                 return;
             }
 
-            // Create user
             $userData = [
                 'name' => htmlspecialchars($name),
                 'email' => strtolower($email),
@@ -487,7 +459,6 @@ class AdminController extends BaseController
             $email = trim($_POST['email'] ?? '');
             $status = strtoupper($_POST['status'] ?? 'ACTIVE');
 
-            // Validation
             if (empty($name) || empty($email)) {
                 $_SESSION['error'] = 'Nama dan email wajib diisi';
                 $this->redirect('/users/' . $userId);
@@ -500,7 +471,6 @@ class AdminController extends BaseController
                 return;
             }
 
-            // Validate status
             $validStatuses = ['ACTIVE', 'INACTIVE', 'BLACKLIST'];
             if (!in_array($status, $validStatuses)) {
                 $_SESSION['error'] = 'Status tidak valid';
@@ -508,14 +478,12 @@ class AdminController extends BaseController
                 return;
             }
 
-            // Check if email exists for other user
             if ($this->userModel->emailExists($email, $userId)) {
                 $_SESSION['error'] = 'Email sudah digunakan oleh pengguna lain';
                 $this->redirect('/users/' . $userId);
                 return;
             }
 
-            // Update user
             $userData = [
                 'name' => htmlspecialchars($name),
                 'email' => strtolower($email),
@@ -541,13 +509,11 @@ class AdminController extends BaseController
      */
     public function toggleUserStatus($userId)
     {
-        // Check if user is admin
         if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
             $this->redirect('/dashboard');
             return;
         }
 
-        // Prevent admin from deactivating themselves
         if ($userId == $_SESSION['user_id']) {
             $_SESSION['error'] = 'Tidak dapat mengubah status sendiri';
             $this->redirect('/users');
@@ -575,31 +541,26 @@ class AdminController extends BaseController
     {
         header('Content-Type: application/json');
 
-        // Check if user is logged in and is admin
         if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             exit;
         }
 
-        // Prevent admin from changing their own status
         if ($userId == $_SESSION['user_id']) {
             echo json_encode(['success' => false, 'message' => 'Tidak dapat mengubah status sendiri']);
             exit;
         }
 
         try {
-            // Get status from POST body
             $input = json_decode(file_get_contents('php://input'), true);
             $status = strtoupper($input['status'] ?? '');
 
-            // Validate status
             $validStatuses = ['ACTIVE', 'INACTIVE', 'BLACKLIST'];
             if (!in_array($status, $validStatuses)) {
                 echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
                 exit;
             }
 
-            // Update user status
             if ($this->userModel->updateStatus($userId, $status)) {
                 $statusMessages = [
                     'ACTIVE' => 'User berhasil diaktifkan',
@@ -625,7 +586,6 @@ class AdminController extends BaseController
      */
     public function dataUsers()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
@@ -633,15 +593,13 @@ class AdminController extends BaseController
         }
 
         try {
-            // Get all users data using pagination with large limit
-            $result = $this->userModel->getUsersPaginated(1, 1000); // Get first 1000 records
+            $result = $this->userModel->getUsersPaginated(1, 1000); 
             $usersList = $result['data'] ?? [];
         } catch (Exception $e) {
             error_log("Error fetching users data: " . $e->getMessage());
             $usersList = [];
         }
 
-        // Set user data
         $data = [
             'title' => 'Data User - LBMS',
             'user' => [
@@ -656,7 +614,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -668,7 +625,6 @@ class AdminController extends BaseController
      */
     public function manajemenAlat()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
@@ -676,16 +632,14 @@ class AdminController extends BaseController
         }
 
         try {
-            // Get all alat data using pagination with large limit
             $alatModel = new AlatModel();
-            $result = $alatModel->getAlatPaginated(1, 1000); // Get first 1000 records
+            $result = $alatModel->getAlatPaginated(1, 1000); 
             $alatList = $result['data'] ?? [];
         } catch (Exception $e) {
             error_log("Error fetching alat data: " . $e->getMessage());
             $alatList = [];
         }
 
-        // Set default user data when auth is disabled
         $data = [
             'title' => 'Manajemen Alat - LBMS',
             'user' => [
@@ -699,7 +653,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -711,7 +664,6 @@ class AdminController extends BaseController
      */
     public function newAlat()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
@@ -719,7 +671,6 @@ class AdminController extends BaseController
         }
 
         try {
-            // Get all categories and types
             $kategoriList = $this->alatModel->getAllKategori();
             $tipeList = $this->alatModel->getAllTipe();
         } catch (Exception $e) {
@@ -728,7 +679,6 @@ class AdminController extends BaseController
             $tipeList = [];
         }
 
-        // Get old input from session if exists (for form repopulation)
         $oldInput = $_SESSION['old_input'] ?? [];
 
         $data = [
@@ -742,10 +692,9 @@ class AdminController extends BaseController
             'tipeList' => $tipeList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null,
-            'oldInput' => $oldInput  // Pass old input to view
+            'oldInput' => $oldInput  
         ];
 
-        // Clear session messages and old input
         unset($_SESSION['error']);
         unset($_SESSION['success']);
         unset($_SESSION['old_input']);
@@ -758,7 +707,6 @@ class AdminController extends BaseController
      */
     public function detailAlat($id)
     {
-        // Get alat data
         $alatData = $this->alatModel->getAlatDetails($id);
 
         if (!$alatData) {
@@ -790,14 +738,12 @@ class AdminController extends BaseController
      */
     public function editAlat($id)
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
             return;
         }
 
-        // Get alat data
         $alatData = $this->alatModel->getAlatDetails($id);
 
         if (!$alatData) {
@@ -807,7 +753,6 @@ class AdminController extends BaseController
         }
 
         try {
-            // Get all categories and types
             $kategoriList = $this->alatModel->getAllKategori();
             $tipeList = $this->alatModel->getAllTipe();
         } catch (Exception $e) {
@@ -841,7 +786,6 @@ class AdminController extends BaseController
      */
     public function newUser()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
@@ -870,7 +814,6 @@ class AdminController extends BaseController
      */
     public function editUser($id)
     {
-        // Get user data
         $userData = $this->userModel->getUserDetails($id);
 
         if (!$userData) {
@@ -902,7 +845,6 @@ class AdminController extends BaseController
      */
     public function detailUser($id)
     {
-        // Get user data
         $userData = $this->userModel->getUserDetails($id);
 
         if (!$userData) {
@@ -938,7 +880,6 @@ class AdminController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $kode_alat = $_POST['kode_alat'] ?? '';
 
-            // Validasi: Cek apakah kode_alat sudah ada
             try {
                 $exists = $this->alatModel->kodeAlatExists($kode_alat);
                 if ($exists) {
@@ -957,7 +898,6 @@ class AdminController extends BaseController
                 }
             } catch (Exception $e) {
                 error_log("Error checking kode_alat: " . $e->getMessage());
-                // Continue with insert attempt
             }
 
             $data = [
@@ -970,7 +910,6 @@ class AdminController extends BaseController
                 'deskripsi' => $_POST['deskripsi'] ?? ''
             ];
 
-            // Handle file upload
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
                 $uploadDir = __DIR__ . '/../../public/upload/images/';
                 if (!is_dir($uploadDir)) {
@@ -982,7 +921,6 @@ class AdminController extends BaseController
                 $targetPath = $uploadDir . $fileName;
 
                 if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
-                    // Store the path in database (without 'public/' prefix for web access)
                     $data['gambar'] = 'upload/images/' . $fileName;
                 }
             }
@@ -1008,7 +946,6 @@ class AdminController extends BaseController
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'nama_alat' => $_POST['nama_alat'] ?? '',
-                // kode_alat di-exclude dari update untuk mencegah perubahan
                 'kategori_id' => $_POST['kategori_id'] ?? '',
                 'tipe_id' => $_POST['tipe_id'] ?? '',
                 'tahun_pembelian' => $_POST['tahun_pembelian'] ?? '',
@@ -1016,7 +953,6 @@ class AdminController extends BaseController
                 'deskripsi' => $_POST['deskripsi'] ?? ''
             ];
 
-            // Handle file upload if new image provided
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
                 $uploadDir = __DIR__ . '/../../public/upload/images/';
                 if (!is_dir($uploadDir)) {
@@ -1028,7 +964,6 @@ class AdminController extends BaseController
                 $targetPath = $uploadDir . $fileName;
 
                 if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
-                    // Store the path in database (without 'public/' prefix for web access)
                     $data['gambar'] = 'upload/images/' . $fileName;
                 }
             }
@@ -1053,13 +988,10 @@ class AdminController extends BaseController
     public function deleteAlat($id)
     {
         try {
-            // Get alat details before deletion for notification
             $alat = $this->alatModel->getAlatDetails($id);
 
-            // Use soft delete instead of permanent deletion
             $this->alatModel->softDelete($id);
 
-            // Create notification for deleted alat
             if ($alat) {
                 $this->notifikasiModel->createNotification(
                     'Alat Dihapus',
@@ -1099,7 +1031,6 @@ class AdminController extends BaseController
     {
         header('Content-Type: application/json');
 
-        // Check if user is logged in and is admin
         if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
             exit;
@@ -1109,14 +1040,12 @@ class AdminController extends BaseController
             $input = json_decode(file_get_contents('php://input'), true);
             $status = strtolower($input['status'] ?? '');
 
-            // Validate status
             $validStatuses = ['tersedia', 'dipinjam', 'maintenance', 'rusak'];
             if (!in_array($status, $validStatuses)) {
                 echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
                 exit;
             }
 
-            // Update alat status
             if ($this->alatModel->updateStatus($alatId, $status)) {
                 $statusMessages = [
                     'tersedia' => 'Status alat berhasil diubah menjadi Tersedia',
@@ -1139,14 +1068,12 @@ class AdminController extends BaseController
      */
     public function newPeminjaman()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
             return;
         }
 
-        // Get available alat (status = TERSEDIA)
         try {
             $alatList = $this->alatModel->getAvailableAlat();
         } catch (Exception $e) {
@@ -1177,7 +1104,6 @@ class AdminController extends BaseController
      */
     public function detailPeminjaman($id)
     {
-        // Check if user is ADMIN - USER role cannot access detail page
         $userRole = $_SESSION['user_role'] ?? 'USER';
         if ($userRole !== 'ADMIN') {
             $_SESSION['error'] = 'Anda tidak memiliki akses ke halaman detail peminjaman';
@@ -1185,7 +1111,6 @@ class AdminController extends BaseController
             return;
         }
 
-        // Get peminjaman data from database
         $peminjamanDetail = $this->peminjamanModel->getPeminjamanDetails($id);
 
         if (!$peminjamanDetail) {
@@ -1219,11 +1144,9 @@ class AdminController extends BaseController
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
-                // Get user_id from session (session structure is $_SESSION['user_id'], not $_SESSION['user']['id'])
                 $userId = $_SESSION['user_id'] ?? null;
 
                 if (!$userId) {
-                    // User is not authenticated, redirect to logout
                     $this->redirect('/logout');
                     return;
                 }
@@ -1234,27 +1157,22 @@ class AdminController extends BaseController
                     'alat_id' => $_POST['alat_id'] ?? '',
                     'tanggal_pinjam' => $_POST['tanggal_pinjam'] ?? '',
                     'tanggal_kembali' => $_POST['tanggal_kembali'] ?? '',
-                    'keterangan' => $_POST['catatan'] ?? '', // Map 'catatan' from form to 'keterangan' in DB
+                    'keterangan' => $_POST['catatan'] ?? '', 
                     'status' => 'PENDING'
                 ];
 
-                // Get nama_peminjam from data for notification
                 $namaPeminjam = $data['nama_peminjam'];
 
-                // Validation
                 if (empty($data['alat_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
                     $_SESSION['error'] = 'Semua field wajib diisi';
                     $this->redirect('/peminjaman/new');
                     return;
                 }
 
-                // Create peminjaman record
                 $peminjamanId = $this->peminjamanModel->create($data);
                 if ($peminjamanId) {
-                    // Get peminjaman details for notification
                     $peminjaman = $this->peminjamanModel->getPeminjamanDetails($peminjamanId);
                     if ($peminjaman) {
-                        // Notify requesting user
                         $this->notifikasiModel->createNotification(
                             'Pengajuan Peminjaman Dikirim',
                             "Pengajuan peminjaman {$peminjaman['nama_alat']} berhasil dikirim dan menunggu persetujuan",
@@ -1262,16 +1180,14 @@ class AdminController extends BaseController
                             $peminjamanId
                         );
 
-                        // Get all ADMIN users
                         $adminUsers = $this->userModel->getUsersByRole('ADMIN');
                         if ($adminUsers && !empty($adminUsers)) {
                             $adminIds = array_column($adminUsers, 'id');
-                            // Create notification to all admins
                             $this->notifikasiModel->createNotification(
                                 'Pengajuan Peminjaman Baru',
                                 "Peminjaman {$peminjaman['nama_alat']} oleh {$namaPeminjam} menunggu persetujuan",
                                 $adminIds,
-                                $peminjamanId  // Attach peminjaman_id to notification
+                                $peminjamanId  
                             );
                         }
                     }
@@ -1359,27 +1275,21 @@ class AdminController extends BaseController
      */
     public function peminjaman()
     {
-        // Check if user is logged in
         if (!$this->isLoggedIn()) {
             $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
             $this->redirect('/login');
             return;
         }
 
-        // Get current user
         $userId = $_SESSION['user_id'] ?? null;
         $userRole = $_SESSION['user_role'] ?? 'USER';
 
-        // Fetch peminjaman data based on role
         if ($userRole === 'ADMIN') {
-            // Admin sees all peminjaman
             $peminjamanList = $this->peminjamanModel->getRecentPeminjaman(100);
         } else {
-            // Regular user sees only their own peminjaman
             $peminjamanList = $this->peminjamanModel->getPeminjamanByUser($userId, null, 100);
         }
 
-        // Set default user data when auth is disabled
         $data = [
             'title' => 'Peminjaman - LBMS',
             'user' => [
@@ -1393,7 +1303,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -1405,7 +1314,6 @@ class AdminController extends BaseController
      */
     public function settings()
     {
-        // Set default user data when auth is disabled
         $data = [
             'title' => 'Pengaturan - LBMS',
             'user' => [
@@ -1417,7 +1325,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -1429,7 +1336,6 @@ class AdminController extends BaseController
      */
     public function settingsProfile()
     {
-        // Set default user data when auth is disabled
         $data = [
             'title' => 'Profil Pengaturan - LBMS',
             'user' => [
@@ -1441,7 +1347,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -1453,7 +1358,6 @@ class AdminController extends BaseController
      */
     public function settingsPrivacySecurity()
     {
-        // Set default user data when auth is disabled
         $data = [
             'title' => 'Privasi & Keamanan - LBMS',
             'user' => [
@@ -1465,7 +1369,6 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -1477,7 +1380,6 @@ class AdminController extends BaseController
      */
     public function notifications()
     {
-        // Set default user data when auth is disabled
         $data = [
             'title' => 'Notifikasi - LBMS',
             'user' => [
@@ -1489,9 +1391,8 @@ class AdminController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Get notifications data
         try {
-            $userId = $_SESSION['user_id'] ?? 1; // Default to user ID 1 for demo
+            $userId = $_SESSION['user_id'] ?? 1; 
             $notifications = $this->notifikasiModel->getNotificationsForUser($userId, 50);
             $unreadCount = $this->notifikasiModel->getUnreadCount($userId);
 
@@ -1503,7 +1404,6 @@ class AdminController extends BaseController
             $data['unreadCount'] = 0;
         }
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -1562,7 +1462,6 @@ class AdminController extends BaseController
 
         try {
             if ($this->peminjamanModel->updateStatus($id, 'DIPINJAM')) {
-                // Create notification
                 $peminjaman = $this->peminjamanModel->getPeminjamanDetails($id);
                 if ($peminjaman) {
                     $this->notifikasiModel->createNotification(
@@ -1595,7 +1494,6 @@ class AdminController extends BaseController
             $alasan = $input['alasan'] ?? 'Peminjaman ditolak';
 
             if ($this->peminjamanModel->updateStatus($id, 'DITOLAK')) {
-                // Create notification
                 $peminjaman = $this->peminjamanModel->getPeminjamanDetails($id);
                 if ($peminjaman) {
                     $this->notifikasiModel->createNotification(
@@ -1625,7 +1523,6 @@ class AdminController extends BaseController
 
         try {
             if ($this->peminjamanModel->returnAsset($id, 'BAIK')) {
-                // Create notification
                 $peminjaman = $this->peminjamanModel->getPeminjamanDetails($id);
                 if ($peminjaman) {
                     $this->notifikasiModel->createNotification(

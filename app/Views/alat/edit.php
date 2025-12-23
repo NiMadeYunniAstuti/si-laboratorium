@@ -251,7 +251,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
@@ -261,7 +260,6 @@
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -274,7 +272,6 @@
                 toggleSidebar();
             });
 
-            // Form validation
 
             $('#kategori_id, #tipe_id').select2({
                 theme: 'bootstrap-5',
@@ -282,7 +279,6 @@
                 placeholder: 'Pilih opsi'
             });
 
-            // Initialize Select2 for global search
             $('#globalSearch').select2({
                 theme: 'bootstrap-5',
                 placeholder: 'Search...',
@@ -290,13 +286,11 @@
                 minimumInputLength: 2,
                 ajax: {
                     url: function() {
-                        // Placeholder - will be configured later with actual search endpoint
                         return '/api/search';
                     },
                     dataType: 'json',
                     delay: 250,
                     processResults: function(data) {
-                        // Placeholder - will be configured later with actual data processing
                         return {
                             results: data.items || []
                         };
@@ -307,29 +301,24 @@
                     if (item.loading) {
                         return 'Searching...';
                     }
-                    // Placeholder - will be configured later with actual display template
                     return item.text || item.name || item.title;
                 },
                 templateSelection: function(item) {
-                    // Placeholder - will be configured later with actual selection template
                     return item.text || item.name || item.title || 'Search...';
                 }
             });
 
-            // Handle search selection
             $('#globalSearch').on('select2:select', function(e) {
                 const data = e.params.data;
                 if (data && data.url) {
                     window.location.href = data.url;
                 }
             });
-            // Form validation
             $('#editAlatForm').on('submit', function(e) {
                 const kodeAlat = $('#kode_alat').val().trim();
                 const tahun = parseInt($('#tahun_pembelian').val());
                 const tahunSekarang = new Date().getFullYear();
 
-                // Validate kode alat format
                 if (!kodeAlat) {
                     e.preventDefault();
                     alert('Kode alat wajib diisi');
@@ -352,7 +341,6 @@
                 return true;
             });
 
-            // Mobile sidebar handling
             if ($(window).width() <= 768) {
                 $('#sidebar').addClass('collapsed');
                 $('#topNavbar').addClass('sidebar-collapsed');

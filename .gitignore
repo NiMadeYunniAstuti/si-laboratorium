@@ -105,7 +105,6 @@ htpasswd
 *.key
 *.crt
 
-# Public folder - ignore user-generated content only
 public/upload/
 public/uploads/
 /public/upload/images/*

@@ -61,12 +61,10 @@ class UserModel extends BaseModel
             $params['role'] = $role;
         }
 
-        // Get total count
         $countSql = "SELECT COUNT(*) as total FROM {$this->table} $whereClause";
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
-        // Get records
         $sql = "SELECT * FROM {$this->table}
                 $whereClause
                 ORDER BY created_at DESC
@@ -253,33 +251,28 @@ class UserModel extends BaseModel
     {
         $stats = [];
 
-        // Total users
         $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total'] = $result['total'] ?? 0;
 
-        // By role
         $sql = "SELECT role, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY role";
         $roleResults = $this->db->fetchAll($sql);
         foreach ($roleResults as $row) {
             $stats['by_role'][strtolower($row['role'])] = $row['total'];
         }
 
-        // By status
         $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY status";
         $statusResults = $this->db->fetchAll($sql);
         foreach ($statusResults as $row) {
             $stats['by_status'][strtolower($row['status'])] = $row['total'];
         }
 
-        // Active users (logged in within last 30 days)
         $sql = "SELECT COUNT(*) as total FROM {$this->table}
                 WHERE last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY)
                   AND deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['active_last_30_days'] = $result['total'] ?? 0;
 
-        // New users this month
         $sql = "SELECT COUNT(*) as total FROM {$this->table}
                 WHERE MONTH(created_at) = MONTH(CURDATE())
                   AND YEAR(created_at) = YEAR(CURDATE())

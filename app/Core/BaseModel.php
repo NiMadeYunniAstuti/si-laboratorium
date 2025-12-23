@@ -62,7 +62,6 @@ class BaseModel
      */
     public function create($data)
     {
-        // Filter only fillable fields
         $data = $this->filterFillable($data);
 
         if (empty($data)) {
@@ -85,7 +84,6 @@ class BaseModel
      */
     public function update($id, $data)
     {
-        // Filter only fillable fields
         $data = $this->filterFillable($data);
 
         if (empty($data)) {
@@ -135,12 +133,10 @@ class BaseModel
             $whereClause = "WHERE " . implode(' AND ', $whereClauses);
         }
 
-        // Get total count
         $countSql = "SELECT COUNT(*) as total FROM {$this->table} {$whereClause}";
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
-        // Get records
         $sql = "SELECT * FROM {$this->table} {$whereClause}
                 LIMIT :limit OFFSET :offset";
 

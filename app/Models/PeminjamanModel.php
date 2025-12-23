@@ -38,7 +38,6 @@ class PeminjamanModel extends BaseModel
             $params['status'] = $status;
         }
 
-        // Get total count
         $countSql = "SELECT COUNT(*) as total FROM peminjaman p
                      LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
                      LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
@@ -47,7 +46,6 @@ class PeminjamanModel extends BaseModel
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
-        // Get records
         $sql = "SELECT p.*, u.name as user_name, u.email as user_email, u.foto as user_foto,
                        a.nama_alat, a.kode_alat, k.name as kategori_name, t.name as tipe_name
                 FROM peminjaman p
@@ -98,23 +96,19 @@ class PeminjamanModel extends BaseModel
      */
     public function createPeminjaman($data)
     {
-        // Start transaction
         $this->db->beginTransaction();
 
         try {
-            // Set created_at if not provided
             if (!isset($data['created_at'])) {
                 $data['created_at'] = date('Y-m-d H:i:s');
             }
 
-            // Create peminjaman record
             $sql = "INSERT INTO {$this->table} (user_id, nama_peminjam, alat_id, tanggal_pinjam, tanggal_kembali, status, keterangan, created_at)
                     VALUES (:user_id, :nama_peminjam, :alat_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :created_at)";
 
             $this->db->query($sql, $data);
             $peminjamanId = $this->db->lastInsertId();
 
-            // Update alat status if not pending
             if ($data['status'] === 'DIPINJAM') {
                 $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
                     'id' => $data['alat_id']
@@ -143,7 +137,6 @@ class PeminjamanModel extends BaseModel
                 throw new Exception("Peminjaman not found");
             }
 
-            // Update peminjaman
             $updateData = ['status' => $status, 'updated_at' => date('Y-m-d H:i:s')];
             if ($tanggalPengembalian) {
                 $updateData['tanggal_pengembalian'] = $tanggalPengembalian;
@@ -159,7 +152,6 @@ class PeminjamanModel extends BaseModel
             $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL";
             $this->db->query($sql, $params);
 
-            // Update alat status
             if ($status === 'SELESAI') {
                 $this->db->query("UPDATE alat SET status = 'TERSEDIA', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
                     'id' => $peminjaman['alat_id']
@@ -192,7 +184,6 @@ class PeminjamanModel extends BaseModel
                 throw new Exception("Peminjaman not found");
             }
 
-            // Update peminjaman
             $updateData = [
                 'status' => 'SELESAI',
                 'tanggal_pengembalian' => date('Y-m-d'),
@@ -209,7 +200,6 @@ class PeminjamanModel extends BaseModel
             $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL";
             $this->db->query($sql, $params);
 
-            // Update alat status and condition
             $assetUpdate = ['status' => 'TERSEDIA', 'updated_at' => date('Y-m-d H:i:s')];
             if ($kondisi) {
                 $assetUpdate['kondisi'] = $kondisi;
@@ -327,19 +317,16 @@ class PeminjamanModel extends BaseModel
     {
         $stats = [];
 
-        // Total peminjaman
         $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total'] = $result['total'] ?? 0;
 
-        // By status
         $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY status";
         $statusResults = $this->db->fetchAll($sql);
         foreach ($statusResults as $row) {
             $stats['by_status'][strtolower($row['status'])] = $row['total'];
         }
 
-        // Overdue count
         $overdueSql = "SELECT COUNT(*) as count FROM peminjaman
                       WHERE status = 'DIPINJAM'
                         AND tanggal_kembali < CURDATE()
@@ -347,13 +334,11 @@ class PeminjamanModel extends BaseModel
         $overdueResult = $this->db->fetch($overdueSql);
         $stats['overdue'] = $overdueResult['count'] ?? 0;
 
-        // Today's peminjaman
         $todaySql = "SELECT COUNT(*) as count FROM peminjaman
                     WHERE DATE(tanggal_pinjam) = CURDATE() AND deleted_at IS NULL";
         $todayResult = $this->db->fetch($todaySql);
         $stats['today'] = $todayResult['count'] ?? 0;
 
-        // This month's peminjaman
         $monthSql = "SELECT COUNT(*) as count FROM peminjaman
                     WHERE MONTH(tanggal_pinjam) = MONTH(CURDATE())
                       AND YEAR(tanggal_pinjam) = YEAR(CURDATE())

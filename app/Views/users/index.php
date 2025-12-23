@@ -184,18 +184,15 @@
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -203,13 +200,11 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Initialize DataTable with proper height constraints
             if (typeof $ !== 'undefined' && $.fn.DataTable) {
                 $('#usersTable').DataTable({
                     responsive: true,
@@ -223,7 +218,6 @@
                     scrollCollapse: false,
                     autoWidth: false,
                     responsive: false,
-                    // Remove fixedHeader to use CSS-only solution
                     language: {
                         paginate: {
                             first: "Pertama",
@@ -249,7 +243,6 @@
                 console.warn('jQuery or DataTables is not loaded');
             }
 
-            // Form validation for tambah user
             $('#tambahUserForm').on('submit', function(e) {
                 const password = $('#password').val();
                 const confirmPassword = $('#confirmPassword').val();
@@ -267,7 +260,6 @@
                 }
             });
 
-            // Update status button click handler
             $('.toggle-status, .blacklist-user').on('click', function() {
                 const userId = $(this).data('id');
                 const status = $(this).data('status');

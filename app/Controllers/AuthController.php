@@ -18,7 +18,6 @@ class AuthController extends BaseController
      */
     public function login()
     {
-        // If user is already logged in, redirect to dashboard
         if ($this->isLoggedIn()) {
             $this->redirect('/dashboard');
             return;
@@ -30,7 +29,6 @@ class AuthController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -51,14 +49,12 @@ class AuthController extends BaseController
         $password = $_POST['password'] ?? '';
         $remember = isset($_POST['remember']);
 
-        // Validate input
         if (empty($email) || empty($password)) {
             $_SESSION['error'] = 'Email and password are required';
             $this->redirect('/login');
             return;
         }
 
-        // Validate email format
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $_SESSION['error'] = 'Invalid email format';
             $this->redirect('/login');
@@ -66,11 +62,9 @@ class AuthController extends BaseController
         }
 
         try {
-            // First, find user by email
             $user = $this->userModel->findByEmail($email);
 
             if ($user && $this->userModel->verifyPassword($password, $user['password_hash'])) {
-                // Check user status
                 $status = strtoupper($user['status'] ?? 'INACTIVE');
 
                 if ($status === 'BLACKLIST') {
@@ -85,7 +79,6 @@ class AuthController extends BaseController
                     return;
                 }
 
-                // Set session data
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = $user['name'];
@@ -93,17 +86,13 @@ class AuthController extends BaseController
                 $_SESSION['logged_in'] = true;
                 $_SESSION['login_time'] = time();
 
-                // Update last login
                 $this->userModel->updateLastLogin($user['id']);
 
-                // Set remember me cookie if checked
                 if ($remember) {
                     $token = bin2hex(random_bytes(32));
-                    setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/'); // 30 days
-                    // TODO: Store token in database
+                    setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/'); 
                 }
 
-                // Redirect both ADMIN and USER to dashboard
                 $this->redirect('/dashboard');
                 return;
             } else {
@@ -122,7 +111,6 @@ class AuthController extends BaseController
      */
     public function register()
     {
-        // If user is already logged in, redirect to dashboard
         if ($this->isLoggedIn()) {
             $this->redirect('/dashboard');
             return;
@@ -134,7 +122,6 @@ class AuthController extends BaseController
             'success' => $_SESSION['success'] ?? null
         ];
 
-        // Clear session messages
         unset($_SESSION['error']);
         unset($_SESSION['success']);
 
@@ -157,7 +144,6 @@ class AuthController extends BaseController
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $role = $_POST['role'] ?? 'USER';
 
-        // Validate input
         $errors = [];
 
         if (empty($name)) {
@@ -191,14 +177,12 @@ class AuthController extends BaseController
         }
 
         try {
-            // Check if email already exists
             if ($this->userModel->emailExists($email)) {
                 $_SESSION['error'] = 'Email address is already registered';
                 $this->redirect('/register');
                 return;
             }
 
-            // Create new user
             $userData = [
                 'name' => htmlspecialchars($name),
                 'email' => strtolower($email),
@@ -229,17 +213,14 @@ class AuthController extends BaseController
      */
     public function logout()
     {
-        // Clear remember me cookie
         if (isset($_COOKIE['remember_token'])) {
             setcookie('remember_token', '', time() - 3600, '/');
             unset($_COOKIE['remember_token']);
         }
 
-        // Destroy session
         session_unset();
         session_destroy();
 
-        // Start new session for flash message
         session_start();
         $_SESSION['success'] = 'You have been logged out successfully';
 
@@ -290,16 +271,12 @@ class AuthController extends BaseController
             $user = $this->userModel->findByEmail($email);
 
             if ($user) {
-                // Generate password reset token
                 $token = bin2hex(random_bytes(32));
                 $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-                // TODO: Store reset token in database
-                // TODO: Send reset email
 
                 $_SESSION['success'] = 'Password reset instructions have been sent to your email address';
             } else {
-                // Don't reveal if email exists or not
                 $_SESSION['success'] = 'If an account with that email exists, password reset instructions have been sent';
             }
         } catch (Exception $e) {

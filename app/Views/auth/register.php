@@ -263,28 +263,24 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Form validation
             $('#registerForm').on('submit', function(e) {
                 const name = $('#name').val().trim();
                 const email = $('#email').val().trim();
                 const password = $('#password').val();
                 const confirmPassword = $('#confirm_password').val();
 
-                // Name validation
                 if (name.length < 3) {
                     e.preventDefault();
                     alert('Nama harus memiliki minimal 3 karakter');
                     return false;
                 }
 
-                // Email validation
                 if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                     e.preventDefault();
                     alert('Masukkan alamat email yang valid');
                     return false;
                 }
 
-                // Password validation
                 if (password.length === 0) {
                     e.preventDefault();
                     alert('Password tidak boleh kosong');

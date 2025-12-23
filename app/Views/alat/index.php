@@ -275,18 +275,15 @@
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -294,13 +291,11 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Initialize DataTable with same properties as dashboard
             if (typeof $ !== 'undefined' && $.fn.DataTable) {
                 $('#alatTable').DataTable({
                     responsive: true,
@@ -314,7 +309,6 @@
                     scrollCollapse: false,
                     autoWidth: false,
                     responsive: false,
-                    // Remove fixedHeader to use CSS-only solution
                     language: {
                         paginate: {
                             first: "Pertama",
@@ -340,7 +334,6 @@
                 console.warn('jQuery or DataTables is not loaded');
             }
 
-            // Form validation for tambah alat
             $('#tambahAlatForm').on('submit', function(e) {
                 const stok = $('#stok').val();
                 const kode = $('#kode').val();
@@ -358,35 +351,27 @@
                 }
             });
 
-            // Edit alat button click handler
             $('.edit-alat').on('click', function() {
                 const alatId = $(this).data('id');
-                // TODO: Implement edit alat functionality
                 alert('Edit alat dengan ID: ' + alatId);
             });
 
-            // Delete alat button click handler (keeping for any that might still exist)
             $('.delete-alat').on('click', function() {
                 const alatId = $(this).data('id');
                 if (confirm('Apakah Anda yakin ingin menghapus alat ini?')) {
-                    // TODO: Call API to delete alat
                     alert('Alat berhasil dihapus');
                 }
             });
 
-            // Maintenance alat button click handler (keeping for any that might still exist)
             $('.maintenance-alat').on('click', function() {
                 const alatId = $(this).data('id');
                 if (confirm('Apakah Anda yakin ingin mengajukan maintenance untuk alat ini?')) {
-                    // TODO: Call API to submit maintenance request
                     alert('Permintaan maintenance berhasil diajukan');
                 }
             });
 
-            // View alat button click handler (for both .view-alat and .lihat-alat)
             $('.view-alat, .lihat-alat').on('click', function() {
                 const alatId = $(this).data('id');
-                // TODO: Implement view alat functionality
                 alert('Lihat detail alat dengan ID: ' + alatId);
             });
 

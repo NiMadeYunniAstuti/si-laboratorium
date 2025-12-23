@@ -348,18 +348,15 @@
     <!-- DataTables removed - not needed for dashboard table -->
       <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -367,23 +364,19 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Mobile sidebar handling
             if ($(window).width() <= 768) {
                 $('#sidebar').addClass('collapsed');
                 $('#topNavbar').addClass('sidebar-collapsed');
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Handle window resize
             $(window).on('resize', function() {
                 if ($(window).width() > 768) {
-                    // Restore desktop state
                     const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                     if (!sidebarCollapsed) {
                         $('#sidebar').removeClass('collapsed');
@@ -391,28 +384,23 @@
                         $('#mainContent').removeClass('sidebar-collapsed');
                     }
                 } else {
-                    // Always collapse sidebar on mobile
                     $('#sidebar').addClass('collapsed', 'mobile-active');
                     $('#topNavbar').addClass('sidebar-collapsed');
                     $('#mainContent').addClass('sidebar-collapsed');
                 }
             });
 
-            // Logout confirmation
             $('form[action="/logout"]').on('submit', function(e) {
                 if (!confirm('Apakah Anda yakin ingin keluar?')) {
                     e.preventDefault();
                 }
             });
 
-            // Dashboard table - removed DataTables to avoid column count issues
-            // Table now uses Bootstrap styling and responsive design only
             console.log('Dashboard loaded successfully - DataTables disabled for better compatibility');
 
             console.log('Dashboard loaded successfully');
         });
 
-        // Peminjaman action functions
         function prosesPeminjaman(id) {
             if (confirm('Apakah Anda yakin ingin menyetujui peminjaman ini?')) {
                 fetch(`/peminjaman/${id}/proses`, {

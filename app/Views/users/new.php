@@ -205,7 +205,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
@@ -215,7 +214,6 @@
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -228,7 +226,6 @@
                 toggleSidebar();
             });
 
-            // Password toggle
             $('#togglePassword').on('click', function() {
                 const passwordField = $('#password');
                 const passwordIcon = $('#passwordIcon');
@@ -255,7 +252,6 @@
                 }
             });
 
-            // Form validation
             $('#tambahUserForm').on('submit', function(e) {
                 const password = $('#password').val();
                 const confirmPassword = $('#confirmPassword').val();
@@ -269,7 +265,6 @@
                 return true;
             });
 
-            // Mobile sidebar handling
             if ($(window).width() <= 768) {
                 $('#sidebar').addClass('collapsed');
                 $('#topNavbar').addClass('sidebar-collapsed');

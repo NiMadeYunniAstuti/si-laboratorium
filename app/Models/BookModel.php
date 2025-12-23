@@ -40,7 +40,6 @@ class BookModel extends BaseModel
             $params['category_id'] = $categoryId;
         }
 
-        // Get total count
         $countSql = "SELECT COUNT(*) as total FROM books b
                      LEFT JOIN authors a ON b.author_id = a.id
                      LEFT JOIN categories c ON b.category_id = c.id
@@ -49,7 +48,6 @@ class BookModel extends BaseModel
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
-        // Get records
         $sql = "SELECT b.*, a.name as author_name, c.name as category_name
                 FROM books b
                 LEFT JOIN authors a ON b.author_id = a.id

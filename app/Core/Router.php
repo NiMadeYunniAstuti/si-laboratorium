@@ -27,7 +27,6 @@ class Router
      */
     public function get($path, $controller, $action = null, $middleware = [])
     {
-        // Check if controller is a closure
         if ($controller instanceof Closure) {
             $this->addRoute('GET', $path, null, $controller, $middleware);
         } else {
@@ -40,7 +39,6 @@ class Router
      */
     public function post($path, $controller, $action = null, $middleware = [])
     {
-        // Check if controller is a closure
         if ($controller instanceof Closure) {
             $this->addRoute('POST', $path, null, $controller, $middleware);
         } else {
@@ -72,24 +70,19 @@ class Router
         $requestMethod = $_SERVER['REQUEST_METHOD'];
         $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-        // Remove query string from request URI
         $requestUri = strtok($requestUri, '?');
 
-        // Find matching route
         foreach ($this->routes as $route) {
             if ($route['method'] === $requestMethod && $this->matchPath($route['path'], $requestUri)) {
                 $this->currentRoute = $route['path'];
 
-                // Execute middleware
                 foreach ($route['middleware'] as $middleware) {
                     if ($middleware === 'auth') {
-                        // Check authentication
                         if (session_status() === PHP_SESSION_NONE) {
                             session_start();
                         }
 
                         if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-                            // User is unauthenticated, redirect to logout to clean up session
                             header('Location: /logout');
                             exit;
                         }
@@ -113,15 +106,12 @@ class Router
                     }
                 }
 
-                // Handle closure-based routes
                 if ($route['action'] instanceof Closure) {
-                    // Extract parameters from URL
                     $params = $this->extractParams($route['path'], $requestUri);
                     call_user_func_array($route['action'], $params);
                     return;
                 }
 
-                // Load and execute controller
                 if (!empty($route['controller'])) {
                     $controllerFile = __DIR__ . '/../Controllers/' . $route['controller'] . '.php';
                     if (file_exists($controllerFile)) {
@@ -131,7 +121,6 @@ class Router
                         if (class_exists($controllerClass)) {
                             $controller = new $controllerClass();
 
-                            // Extract parameters from URL
                             $params = $this->extractParams($route['path'], $requestUri);
 
                             if (method_exists($controller, $route['action'])) {
@@ -155,7 +144,6 @@ class Router
      */
     private function matchPath($routePath, $requestPath)
     {
-        // Convert route path to regex
         $pattern = preg_replace('/\{([^}]+)\}/', '([^/]+)', $routePath);
         $pattern = '#^' . $pattern . '$#';
 
@@ -167,12 +155,10 @@ class Router
      */
     private function extractParams($routePath, $requestPath)
     {
-        // Convert route path to regex to capture parameters
         $pattern = preg_replace('/\{([^}]+)\}/', '([^/]+)', $routePath);
         $pattern = '#^' . $pattern . '$#';
 
         if (preg_match($pattern, $requestPath, $matches)) {
-            // Remove the full match and return captured groups
             array_shift($matches);
             return $matches;
         }
@@ -245,9 +231,8 @@ class Router
                 $pattern = '#^' . $pattern . '$#';
 
                 if (preg_match($pattern, $requestUri, $matches)) {
-                    array_shift($matches); // Remove full match
+                    array_shift($matches); 
 
-                    // Get parameter names from route
                     preg_match_all('/\{([^}]+)\}/', $route['path'], $paramNames);
 
                     return array_combine($paramNames[1], $matches);

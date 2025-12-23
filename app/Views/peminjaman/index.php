@@ -180,18 +180,15 @@
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
         <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -199,13 +196,11 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Initialize DataTable with same properties as dashboard
             if (typeof $ !== 'undefined' && $.fn.DataTable) {
                 $('#peminjamanTable').DataTable({
                     responsive: true,
@@ -219,7 +214,6 @@
                     scrollCollapse: false,
                     autoWidth: false,
                     responsive: false,
-                    // Remove fixedHeader to use CSS-only solution
                     language: {
                         paginate: {
                             first: "Pertama",
@@ -245,12 +239,10 @@
                 console.warn('jQuery or DataTables is not loaded');
             }
 
-            // Set minimum date for tanggal_pinjam to today
             const today = new Date().toISOString().split('T')[0];
             $('#tanggal_pinjam').prop('min', today);
             $('#tanggal_pinjam').val(today);
 
-            // Form validation for tambah peminjaman
             $('#tambahPeminjamanForm').on('submit', function(e) {
                 const tanggalPinjam = $('#tanggal_pinjam').val();
                 const tanggalKembali = $('#tanggal_kembali').val();
@@ -269,32 +261,26 @@
                 }
             });
 
-            // Update minimum tanggal_kembali when tanggal_pinjam changes
             $('#tanggal_pinjam').on('change', function() {
                 const pinjamDate = new Date($(this).val());
-                pinjamDate.setDate(pinjamDate.getDate() + 1); // Minimum 1 day after pinjam date
+                pinjamDate.setDate(pinjamDate.getDate() + 1); 
                 const minKembali = pinjamDate.toISOString().split('T')[0];
                 $('#tanggal_kembali').prop('min', minKembali);
 
-                // Clear tanggal_kembali if it's now invalid
                 if ($('#tanggal_kembali').val() &&
                     new Date($('#tanggal_kembali').val()) <= new Date($(this).val())) {
                     $('#tanggal_kembali').val('');
                 }
             });
 
-            // View peminjaman button click handler
             $('.view-peminjaman').on('click', function() {
                 const peminjamanId = $(this).data('id');
-                // TODO: Implement view peminjaman functionality
                 alert('Lihat detail peminjaman dengan ID: ' + peminjamanId);
             });
 
-            // Kembalikan peminjaman button click handler (keeping for any that might still exist)
             $('.kembalikan-peminjaman').on('click', function() {
                 const peminjamanId = $(this).data('id');
                 if (confirm('Apakah Anda yakin ingin mengembalikan barang ini?')) {
-                    // TODO: Call API to return item
                     alert('Barang berhasil dikembalikan');
                 }
             });

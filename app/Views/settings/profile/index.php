@@ -263,18 +263,15 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -282,19 +279,16 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Form validation for profile
             $('#profileForm').on('submit', function(e) {
                 const currentPassword = $('#current_password').val();
                 const newPassword = $('#new_password').val();
                 const confirmPassword = $('#confirm_password').val();
 
-                // Validate password change
                 if (newPassword || confirmPassword || currentPassword) {
                     if (!currentPassword) {
                         e.preventDefault();
@@ -318,23 +312,19 @@
                 return true;
             });
 
-            // Tab change handler to prevent form data loss
             $('button[data-bs-toggle="tab"]').on('show.bs.tab', function(e) {
                 const target = $(e.target).attr('data-bs-target');
                 const currentForm = $(e.relatedTarget).closest('.tab-pane').find('form');
 
                 if (currentForm.length && currentForm[0].checkValidity() === false) {
-                    // Prevent tab change if form has invalid data
                     e.preventDefault();
                     alert('Harap selesaikan atau perbaiki form sebelum berpindah tab');
                     return;
                 }
 
-                // Check if form has unsaved changes
                 if (currentForm.length) {
                     const formData = new FormData(currentForm[0]);
                     const originalData = new FormData(currentForm[0]);
-                    // Simple check - in production, you'd want to compare with original values
                     const hasChanges = Array.from(formData.entries()).some(([key, value]) => {
                         return currentForm[0].elements[key] && currentForm[0].elements[key].defaultValue !== value;
                     });

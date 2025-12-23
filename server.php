@@ -4,7 +4,6 @@ use FRankenPHP\Server;
 
 require_once 'vendor/autoload.php';
 
-// Start FrankenPHP server
 Server::create([
     'document_root' => __DIR__ . '/public',
     'router' => __DIR__ . '/public/index.php',

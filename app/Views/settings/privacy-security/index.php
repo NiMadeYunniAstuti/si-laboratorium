@@ -182,18 +182,15 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Sidebar toggle functionality
             function toggleSidebar() {
                 $('#sidebar').toggleClass('collapsed');
                 $('#topNavbar').toggleClass('sidebar-collapsed');
                 $('#mainContent').toggleClass('sidebar-collapsed');
 
-                // Save sidebar state to localStorage
                 const isCollapsed = $('#sidebar').hasClass('collapsed');
                 localStorage.setItem('sidebarCollapsed', isCollapsed);
             }
 
-            // Restore sidebar state from localStorage
             const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
             if (sidebarCollapsed) {
                 $('#sidebar').addClass('collapsed');
@@ -201,13 +198,11 @@
                 $('#mainContent').addClass('sidebar-collapsed');
             }
 
-            // Sidebar toggle click handler
             $('#sidebarToggle').on('click', function(e) {
                 e.stopPropagation();
                 toggleSidebar();
             });
 
-            // Password Strength Checker
             function checkPasswordStrength(password) {
                 let strength = 0;
                 const strengthBar = $('#passwordStrengthBar');
@@ -240,13 +235,11 @@
                 checkPasswordStrength($(this).val());
             });
 
-            // Form Validation
             $('#privacySecurityForm').on('submit', function(e) {
                 const currentPassword = $('#current_password').val();
                 const newPassword = $('#new_password').val();
                 const confirmPassword = $('#confirm_password').val();
 
-                // Validate password change
                 if (newPassword || confirmPassword) {
                     if (!currentPassword) {
                         e.preventDefault();
@@ -270,7 +263,6 @@
                 return true;
             });
 
-            // Reset Form
             window.resetForm = function() {
                 $('#privacySecurityForm')[0].reset();
                 $('#passwordStrengthBar').css('width', '0%');
