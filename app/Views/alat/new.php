@@ -60,6 +60,12 @@
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
         </div>
 
         <div class="navbar-right">
@@ -67,10 +73,12 @@
                 <!-- Notification Icon -->
                 <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        3
-                        <span class="visually-hidden">unread notifications</span>
-                    </span>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?= $unreadNotificationCount ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
                 </a>
 
                 <!-- User Profile -->
@@ -141,8 +149,8 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="nama" class="form-label">Nama Alat</label>
-                                <input type="text" class="form-control" id="nama" name="nama" placeholder="Masukkan nama alat" required>
+                                <label for="nama_alat" class="form-label">Nama Alat</label>
+                                <input type="text" class="form-control" id="nama_alat" name="nama_alat" placeholder="Masukkan nama alat" required>
                                 <small class="form-text text-muted">Nama lengkap alat laboratorium</small>
                             </div>
 
@@ -181,9 +189,9 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="tahun" class="form-label">Tahun</label>
-                                <input type="number" class="form-control" id="tahun" name="tahun" min="1900" max="<?= date('Y') ?>" value="<?= date('Y') ?>" required>
-                                <small class="form-text text-muted">Tahun alat</small>
+                                <label for="tahun_pembelian" class="form-label">Tahun Pembelian</label>
+                                <input type="number" class="form-control" id="tahun_pembelian" name="tahun_pembelian" min="1900" max="<?= date('Y') ?>" value="2025" required>
+                                <small class="form-text text-muted">Tahun pembelian alat</small>
                             </div>
 
                             <div class="mb-3">
@@ -214,7 +222,7 @@
                                 <label for="gambar" class="form-label">Foto Alat</label>
                                 <input type="file" class="form-control" id="gambar" name="gambar" accept="image/*">
                                 <small class="form-text text-muted">Upload foto alat (JPG, PNG, maksimal 2MB)</small>
-                                <div id="imagePreview" class="mt-2" style="max-width: 200px;">
+                                <div id="imagePreview" class="mt-2" style="">
                                     <!-- Preview akan ditampilkan di sini -->
                                 </div>
                             </div>
@@ -318,7 +326,7 @@
 
             // Form validation
             $('#tambahAlatForm').on('submit', function(e) {
-                const tahun = parseInt($('#tahun').val());
+                const tahun = parseInt($('#tahun_pembelian').val());
                 const tahunSekarang = new Date().getFullYear();
 
                 if (tahun < 1900 || tahun > tahunSekarang) {
@@ -345,5 +353,47 @@
             }
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

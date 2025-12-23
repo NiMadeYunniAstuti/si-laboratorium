@@ -6,6 +6,8 @@
     <title>Daftar Alat - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
     </head>
@@ -59,6 +61,12 @@
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
         </div>
 
         <div class="navbar-right">
@@ -66,10 +74,12 @@
                 <!-- Notification Icon -->
                 <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        3
-                        <span class="visually-hidden">unread notifications</span>
-                    </span>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?= $unreadNotificationCount ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
                 </a>
 
                 <!-- User Profile -->
@@ -137,12 +147,18 @@
                           <td><?= htmlspecialchars($item['nama_alat'] ?? '') ?></td>
                           <td>
                               <?php if (!empty($item['gambar'])): ?>
-                                  <img src="/uploads/alat/<?= htmlspecialchars($item['gambar']) ?>"
-                                       alt="<?= htmlspecialchars($item['nama_alat'] ?? 'Alat') ?>"
-                                       style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                  <button type="button"
+                                          class="btn btn-sm btn-outline-primary"
+                                          data-bs-toggle="modal"
+                                          data-bs-target="#alatImageModal"
+                                          data-image="/<?= ltrim(htmlspecialchars($item['gambar']), '/') ?>"
+                                          data-name="<?= htmlspecialchars($item['nama_alat'] ?? 'Alat') ?>">
+                                      <i class="bi bi-image me-1"></i>Lihat
+                                  </button>
                               <?php else: ?>
-                                  <img src="https://via.placeholder.com/60x60" alt="No Image"
-                                       style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                  <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+                                      <i class="bi bi-image me-1"></i>Tidak ada
+                                  </button>
                               <?php endif; ?>
                           </td>
                           <td><?= htmlspecialchars($item['tahun_pembelian'] ?? '-') ?></td>
@@ -235,10 +251,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Gambar Alat Modal -->
+        <div class="modal fade" id="alatImageModal" tabindex="-1" aria-labelledby="alatImageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="alatImageModalLabel">Gambar Alat</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img src="" alt="Gambar Alat" class="img-fluid rounded">
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
         <script>
@@ -357,7 +389,59 @@
                 // TODO: Implement view alat functionality
                 alert('Lihat detail alat dengan ID: ' + alatId);
             });
+
+            $('#alatImageModal').on('show.bs.modal', function(event) {
+                const button = $(event.relatedTarget);
+                const image = button.data('image') || '';
+                const name = button.data('name') || 'Alat';
+                const modal = $(this);
+
+                modal.find('.modal-title').text(`Gambar Alat - ${name}`);
+                modal.find('img').attr('src', image).attr('alt', name);
+            });
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

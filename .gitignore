@@ -108,3 +108,5 @@ htpasswd
 # Public folder - ignore user-generated content only
 public/upload/
 public/uploads/
+/public/upload/images/*
+!/public/upload/images/.gitkeep

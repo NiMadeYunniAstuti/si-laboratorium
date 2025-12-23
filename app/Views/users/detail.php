@@ -6,6 +6,8 @@
     <title>Detail User - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
 </head>
 <body>
@@ -27,7 +29,7 @@
                 Data User
             </a>
             <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/manajemen-alat" class="sidebar-menu-item">
+                <a href="/alat" class="sidebar-menu-item">
                     <i class="bi bi-wrench"></i>
                     Manajemen Alat
                 </a>
@@ -52,6 +54,12 @@
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
         </div>
 
         <div class="navbar-right">
@@ -59,10 +67,12 @@
                 <!-- Notification Icon -->
                 <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        3
-                        <span class="visually-hidden">unread notifications</span>
-                    </span>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?= $unreadNotificationCount ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
                 </a>
 
                 <!-- User Profile -->
@@ -119,8 +129,11 @@
                         <p class="text-muted"><?= htmlspecialchars($userDetail['role'] ?? 'USER') ?></p>
 
                         <div class="mb-3">
-                            <?php if (strtoupper($userDetail['status'] ?? 'ACTIVE') === 'ACTIVE'): ?>
+                            <?php $detailStatus = strtoupper($userDetail['status'] ?? 'ACTIVE'); ?>
+                            <?php if ($detailStatus === 'ACTIVE'): ?>
                                 <span class="badge bg-success">Aktif</span>
+                            <?php elseif ($detailStatus === 'BLACKLIST'): ?>
+                                <span class="badge bg-dark">Blacklist</span>
                             <?php else: ?>
                                 <span class="badge bg-danger">Non-aktif</span>
                             <?php endif; ?>
@@ -130,8 +143,7 @@
                             <a class="btn btn-outline-primary" href="/users/<?= $userDetail['id'] ?? '' ?>/edit">
                                 <i class="bi bi-pencil me-2"></i>Edit User
                             </a>
-                            <?php if (($userDetail['id'] ?? null) !== ($user['id'] ?? null)): ?>
-                                <?php $detailStatus = strtoupper($userDetail['status'] ?? 'ACTIVE'); ?>
+                            <?php if (($userDetail['id'] ?? null) !== ($user['id'] ?? null) && $detailStatus !== 'BLACKLIST'): ?>
                                 <div class="btn-group" role="group" aria-label="User status actions">
                                     <?php if ($detailStatus === 'INACTIVE'): ?>
                                         <button class="btn btn-outline-success status-action"
@@ -143,7 +155,7 @@
                                         <button class="btn btn-outline-danger status-action"
                                                 data-id="<?= $userDetail['id'] ?? '' ?>"
                                                 data-status="INACTIVE"
-                                                <?= $detailStatus === 'INACTIVE' ? 'disabled' : '' ?>>
+                                                <?= $detailStatus === 'INACTIVE' || $detailStatus === 'BLACKLIST' ? 'disabled' : '' ?>>
                                             <i class="bi bi-person-dash me-2"></i>Non-aktifkan
                                         </button>
                                     <?php endif; ?>
@@ -214,39 +226,6 @@
                             </div>
                         </div>
 
-                        <hr>
-
-                        <h6 class="text-primary mb-3">
-                            <i class="bi bi-clock-history me-1"></i>Riwayat Peminjaman
-                        </h6>
-
-                        <!-- Sample loan history -->
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>No Peminjaman</th>
-                                        <th>Item</th>
-                                        <th>Tanggal Pinjam</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>TRX001</td>
-                                        <td>Oscilloscope Digital</td>
-                                        <td>15/12/2024</td>
-                                        <td><span class="badge bg-success">Selesai</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>TRX002</td>
-                                        <td>Mikroskop</td>
-                                        <td>12/12/2024</td>
-                                        <td><span class="badge bg-warning">Berjalan</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -316,6 +295,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             // Sidebar toggle functionality
@@ -394,5 +374,47 @@
             }
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

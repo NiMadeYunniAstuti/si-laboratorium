@@ -6,6 +6,8 @@
     <title>Dashboard - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <!-- DataTables CSS removed - not needed for dashboard table -->
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
     <style>
@@ -141,6 +143,12 @@
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
         </div>
 
         <div class="navbar-right">
@@ -148,10 +156,12 @@
                 <!-- Notification Icon -->
                 <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        3
-                        <span class="visually-hidden">unread notifications</span>
-                    </span>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?= $unreadNotificationCount ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
                 </a>
 
                 <!-- User Profile -->
@@ -232,8 +242,7 @@
                         <thead>
                             <tr>
                                 <th>NO</th>
-                                <th>NO PEMINJAMAN</th>
-                                <th>TIPE PEMINJAMAN</th>
+                                <th>NAMA PEMINJAM</th>
                                 <th>ITEM</th>
                                 <th>TANGGAL PINJAM</th>
                                 <th>TANGGAL BERAKHIR</th>
@@ -246,8 +255,7 @@
                                 <?php foreach ($recentPeminjaman as $index => $peminjaman): ?>
                                     <tr>
                                         <td><?php echo $index + 1; ?></td>
-                                        <td>TRX<?php echo str_pad($peminjaman['id'] ?? '000', 3, '0', STR_PAD_LEFT); ?></td>
-                                        <td>Alat Laboratorium</td>
+                                        <td><?php echo htmlspecialchars($peminjaman['nama_peminjam'] ?? $peminjaman['user_name'] ?? '-'); ?></td>
                                         <td><?php echo htmlspecialchars($peminjaman['nama_alat'] ?? 'Unknown'); ?></td>
                                         <td><?php echo date('d-m-Y', strtotime($peminjaman['tanggal_pinjam'] ?? 'now')); ?></td>
                                         <td><?php echo date('d-m-Y', strtotime($peminjaman['tanggal_kembali'] ?? 'now')); ?></td>
@@ -277,21 +285,23 @@
                                         <td>
                                             <div class="action-buttons">
                                             <?php if ($status === 'PENDING'): ?>
-                                                <div class="btn-group btn-group-sm" role="group">
+                                                <div class="d-flex flex-wrap gap-2">
                                                     <a href="/peminjaman/<?php echo $peminjaman['id']; ?>/detail"
                                                        class="btn btn-outline-primary" title="Detail">
-                                                        <i class="bi bi-eye"></i>
+                                                        <i class="bi bi-eye me-1"></i>Detail
                                                     </a>
-                                                    <button type="button" class="btn btn-outline-success"
-                                                            onclick="prosesPeminjaman(<?php echo $peminjaman['id']; ?>)"
-                                                            title="Proses">
-                                                        <i class="bi bi-check-circle"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-danger"
-                                                            onclick="tolakPeminjaman(<?php echo $peminjaman['id']; ?>)"
-                                                            title="Tolak">
-                                                        <i class="bi bi-x-circle"></i>
-                                                    </button>
+                                                    <div class="btn-group" role="group">
+                                                        <button type="button" class="btn btn-outline-success"
+                                                                onclick="prosesPeminjaman(<?php echo $peminjaman['id']; ?>)"
+                                                                title="Proses">
+                                                            <i class="bi bi-check-circle me-1"></i>Setujui
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger"
+                                                                onclick="tolakPeminjaman(<?php echo $peminjaman['id']; ?>)"
+                                                                title="Tolak">
+                                                            <i class="bi bi-x-circle me-1"></i>Tolak
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             <?php elseif ($status === 'DITOLAK' || $status === 'SELESAI'): ?>
                                                 <a href="/peminjaman/<?php echo $peminjaman['id']; ?>/detail"
@@ -299,16 +309,16 @@
                                                     <i class="bi bi-eye me-1"></i>Detail
                                                 </a>
                                             <?php else: ?>
-                                                <div class="btn-group btn-group-sm" role="group">
+                                                <div class="d-flex flex-wrap gap-2">
                                                     <a href="/peminjaman/<?php echo $peminjaman['id']; ?>/detail"
                                                        class="btn btn-outline-primary" title="Detail">
-                                                        <i class="bi bi-eye"></i>
+                                                        <i class="bi bi-eye me-1"></i>Detail
                                                     </a>
                                                     <?php if ($status === 'DIPINJAM'): ?>
                                                         <button type="button" class="btn btn-outline-success"
                                                                 onclick="selesaikanPeminjaman(<?php echo $peminjaman['id']; ?>)"
                                                                 title="Selesaikan">
-                                                            <i class="bi bi-check2-circle"></i>
+                                                            <i class="bi bi-check2-circle me-1"></i>Selesaikan
                                                         </button>
                                                     <?php endif; ?>
                                                 </div>
@@ -334,6 +344,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- DataTables removed - not needed for dashboard table -->
       <script>
         $(document).ready(function() {
@@ -478,5 +489,47 @@
             }
         }
     </script>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

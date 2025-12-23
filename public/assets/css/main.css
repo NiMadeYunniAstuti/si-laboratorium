@@ -400,6 +400,40 @@ body {
     border-bottom: 2px solid #e5e7eb;
 }
 
+#globalSearch {
+    min-height: 46px;
+    font-size: 1rem;
+}
+
+.global-search-wrapper {
+    width: 30vw;
+    max-width: 30vw;
+}
+
+#globalSearch + .select2-container {
+    width: 30vw !important;
+    max-width: 30vw;
+}
+
+.select2-container--bootstrap-5 .select2-selection {
+    min-height: 46px;
+    font-size: 1rem;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    line-height: normal;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
+    line-height: normal;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single #select2-globalSearch-container {
+    height: auto;
+}
+
 /* Dashboard Welcome Section */
 .welcome-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);

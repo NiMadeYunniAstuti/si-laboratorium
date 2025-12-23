@@ -87,6 +87,8 @@ $router->get('/settings/privacy-security', 'AdminController', 'settingsPrivacySe
 
 // Notifications routes
 $router->get('/notifications', 'AdminController', 'notifications', ['auth']);
+$router->post('/notifications/mark-read/{id}', 'AdminController', 'markNotificationRead', ['auth']);
+$router->delete('/notifications/delete/{id}', 'AdminController', 'deleteNotification', ['auth']);
 
 // Admin routes
 $router->get('/admin/users', 'AdminController', 'users');

@@ -16,7 +16,7 @@ class KategoriAlatModel extends BaseModel
     public function getAllKategori()
     {
         $sql = "SELECT * FROM {$this->table}
-                WHERE deletedAt IS NULL
+                WHERE deleted_at IS NULL
                 ORDER BY name ASC";
 
         return $this->db->fetchAll($sql);
@@ -28,7 +28,7 @@ class KategoriAlatModel extends BaseModel
     public function getKategoriById($id)
     {
         $sql = "SELECT * FROM {$this->table}
-                WHERE id = :id AND deletedAt IS NULL";
+                WHERE id = :id AND deleted_at IS NULL";
 
         return $this->db->fetch($sql, ['id' => $id]);
     }
@@ -56,7 +56,7 @@ class KategoriAlatModel extends BaseModel
      */
     public function deleteKategori($id)
     {
-        $sql = "UPDATE {$this->table} SET deletedAt = NOW() WHERE id = :id";
+        $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
@@ -67,8 +67,8 @@ class KategoriAlatModel extends BaseModel
     {
         $sql = "SELECT k.*, COUNT(a.id) as jumlah_alat
                 FROM {$this->table} k
-                LEFT JOIN alat a ON k.id = a.kategori_id AND a.deletedAt IS NULL
-                WHERE k.deletedAt IS NULL
+                LEFT JOIN alat a ON k.id = a.kategori_id AND a.deleted_at IS NULL
+                WHERE k.deleted_at IS NULL
                 GROUP BY k.id
                 ORDER BY k.name ASC";
 

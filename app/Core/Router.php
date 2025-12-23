@@ -93,6 +93,23 @@ class Router
                             header('Location: /logout');
                             exit;
                         }
+
+                        if (!empty($_SESSION['user_id'])) {
+                            $userModel = new UserModel();
+                            $statusRow = $userModel->getStatusById($_SESSION['user_id']);
+                            $status = strtoupper($statusRow['status'] ?? 'INACTIVE');
+
+                            if ($status !== 'ACTIVE') {
+                                session_unset();
+                                session_destroy();
+                                session_start();
+                                $_SESSION['error'] = $status === 'BLACKLIST'
+                                    ? 'Akun Anda di-blacklist. Silakan hubungi administrator.'
+                                    : 'Akun Anda tidak aktif. Silakan hubungi administrator.';
+                                header('Location: /login');
+                                exit;
+                            }
+                        }
                     }
                 }
 

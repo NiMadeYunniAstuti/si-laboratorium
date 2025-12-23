@@ -6,6 +6,8 @@
     <title>Ajukan Peminjaman Baru - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
 </head>
 <body>
@@ -58,6 +60,12 @@
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
         </div>
 
         <div class="navbar-right">
@@ -65,10 +73,12 @@
                 <!-- Notification Icon -->
                 <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        3
-                        <span class="visually-hidden">unread notifications</span>
-                    </span>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?= $unreadNotificationCount ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
                 </a>
 
                 <!-- User Profile -->
@@ -131,19 +141,6 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="jenis_peminjaman" class="form-label">Jenis Peminjaman</label>
-                                <select class="form-control" id="jenis_peminjaman" name="jenis_peminjaman" required>
-                                    <option value="">Pilih Jenis Peminjaman</option>
-                                    <option value="praktikum">Praktikum</option>
-                                    <option value="penelitian">Penelitian</option>
-                                    <option value="pengajaran">Pengajaran</option>
-                                    <option value="presentasi">Presentasi</option>
-                                    <option value="lainnya">Lainnya</option>
-                                </select>
-                                <small class="form-text text-muted">Pilih jenis peminjaman</small>
-                            </div>
-
-                            <div class="mb-3">
                                 <label for="catatan" class="form-label">Catatan</label>
                                 <textarea class="form-control" id="catatan" name="catatan" rows="4" placeholder="Tambahkan catatan atau keterangan tambahan"></textarea>
                                 <small class="form-text text-muted">Catatan tambahan jika diperlukan (opsional)</small>
@@ -157,15 +154,22 @@
 
                             <div class="mb-3">
                                 <label for="alat_id" class="form-label">Pilih Alat</label>
-                                <select class="form-control" id="alat_id" name="alat_id" required>
+                                <select class="form-control" id="alat_id" name="alat_id" required <?= empty($alatList) ? 'disabled' : '' ?>>
                                     <option value="">Pilih Alat</option>
-                                    <option value="1">Mikroskop Digital (LT001)</option>
-                                    <option value="2">Timbangan Analitik (LT002)</option>
-                                    <option value="3">Autoklaf (LT003)</option>
-                                    <option value="4">Sentrifuge (LT004)</option>
-                                    <option value="5">Spektrofotometer (LT005)</option>
+                                    <?php if (!empty($alatList)): ?>
+                                        <?php foreach ($alatList as $alat): ?>
+                                            <option value="<?= $alat['id'] ?>">
+                                                <?= htmlspecialchars($alat['nama_alat'] ?? 'Alat') ?>
+                                                (<?= htmlspecialchars($alat['kode_alat'] ?? '-') ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="">Tidak ada alat tersedia</option>
+                                    <?php endif; ?>
                                 </select>
-                                <small class="form-text text-muted">Pilih alat yang akan dipinjam</small>
+                                <small class="form-text text-muted">
+                                    <?= empty($alatList) ? 'Belum ada alat tersedia untuk dipinjam.' : 'Pilih alat yang akan dipinjam.' ?>
+                                </small>
                             </div>
 
                             <div class="row">
@@ -185,14 +189,6 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="surat" class="form-label">Surat Pengantar</label>
-                                <input type="file" class="form-control" id="surat" name="surat" accept="application/pdf,image/*">
-                                <small class="form-text text-muted">Upload surat pengantar (PDF, JPG, PNG - maksimal 2MB)</small>
-                                <div id="suratPreview" class="mt-2" style="max-width: 200px;">
-                                    <!-- Preview akan ditampilkan di sini -->
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -216,6 +212,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             // Sidebar toggle functionality
@@ -241,10 +238,20 @@
                 toggleSidebar();
             });
 
-            // Set minimum date for tanggal_pinjam (today)
+            if (!$('#alat_id').prop('disabled')) {
+                $('#alat_id').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Pilih alat',
+                    allowClear: true
+                });
+            }
+
+            // Set minimum date for tanggal_pinjam (today, local time)
             const now = new Date();
-            const today = now.toISOString().split('T')[0];
-            const minDateTime = now.toISOString().slice(0, 16);
+            const pad = (value) => String(value).padStart(2, '0');
+            const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            const minDateTime = `${todayStr}T00:00`;
             $('#tanggal_pinjam').attr('min', minDateTime);
             $('#tanggal_kembali').attr('min', minDateTime);
 
@@ -252,78 +259,25 @@
             $('#tanggal_pinjam').on('change', function() {
                 const pinjamDate = new Date($(this).val());
                 const minKembali = new Date(pinjamDate.getTime() + (24 * 60 * 60 * 1000)); // +1 day
-                const minKembaliStr = minKembali.toISOString().slice(0, 16);
+                const minKembaliStr = `${minKembali.getFullYear()}-${pad(minKembali.getMonth() + 1)}-${pad(minKembali.getDate())}T${pad(minKembali.getHours())}:${pad(minKembali.getMinutes())}`;
                 $('#tanggal_kembali').attr('min', minKembaliStr);
 
                 // Set default tanggal_kembali to 7 days from tanggal_pinjam
                 const defaultKembali = new Date(pinjamDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-                const defaultKembaliStr = defaultKembali.toISOString().slice(0, 16);
+                const defaultKembaliStr = `${defaultKembali.getFullYear()}-${pad(defaultKembali.getMonth() + 1)}-${pad(defaultKembali.getDate())}T${pad(defaultKembali.getHours())}:${pad(defaultKembali.getMinutes())}`;
                 $('#tanggal_kembali').val(defaultKembaliStr);
             });
-
-            // File upload functionality
-            $('#surat').on('change', function(e) {
-                const file = e.target.files[0];
-                const preview = $('#suratPreview');
-
-                if (file) {
-                    // Validate file size (2MB)
-                    if (file.size > 2 * 1024 * 1024) {
-                        alert('Ukuran file maksimal 2MB');
-                        $(this).val('');
-                        preview.empty();
-                        return;
-                    }
-
-                    // Validate file type
-                    if (!file.type.match('application/pdf') && !file.type.match('image.*')) {
-                        alert('Hanya file PDF dan gambar yang diperbolehkan');
-                        $(this).val('');
-                        preview.empty();
-                        return;
-                    }
-
-                    // Show preview
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        if (file.type.match('application/pdf')) {
-                            // PDF file
-                            preview.html(`
-                                <div class="alert alert-info mt-2" role="alert">
-                                    <i class="bi bi-file-pdf me-2"></i>
-                                    ${file.name}
-                                </div>
-                            `);
-                        } else {
-                            // Image file
-                            preview.html(`
-                                <img src="${e.target.result}" class="img-fluid rounded shadow-sm" alt="Preview">
-                                <button type="button" class="btn btn-sm btn-outline-danger mt-2" onclick="removeSurat()">
-                                    <i class="bi bi-trash"></i> Hapus
-                                </button>
-                            `);
-                        }
-                    };
-                    reader.readAsDataURL(file);
-                } else {
-                    preview.empty();
-                }
-            });
-
-            // Remove surat file function
-            window.removeSurat = function() {
-                $('#surat').val('');
-                $('#suratPreview').empty();
-            };
 
             // Form validation
             $('#tambahPeminjamanForm').on('submit', function(e) {
                 const tanggalPinjam = new Date($('#tanggal_pinjam').val());
                 const tanggalKembali = new Date($('#tanggal_kembali').val());
-                const today = new Date();
+                const todayDateOnly = new Date();
+                todayDateOnly.setHours(0, 0, 0, 0);
+                const pinjamDateOnly = new Date(tanggalPinjam.getFullYear(), tanggalPinjam.getMonth(), tanggalPinjam.getDate());
 
                 // Validate dates
-                if (tanggalPinjam < today) {
+                if (isNaN(tanggalPinjam.getTime()) || pinjamDateOnly < todayDateOnly) {
                     e.preventDefault();
                     alert('Tanggal pinjam tidak boleh kurang dari hari ini');
                     return false;
@@ -346,5 +300,47 @@
             }
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

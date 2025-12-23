@@ -27,7 +27,7 @@ class AlatModel extends BaseModel
         $limit = $limit ?? Config::ITEMS_PER_PAGE;
         $offset = ($page - 1) * $limit;
 
-        $whereClause = 'WHERE a.deletedAt IS NULL';
+        $whereClause = 'WHERE a.deleted_at IS NULL';
         $params = [];
 
         if (!empty($search)) {
@@ -53,8 +53,8 @@ class AlatModel extends BaseModel
         // Get records with joins
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
                 $whereClause
                 ORDER BY a.created_at DESC
                 LIMIT :limit OFFSET :offset";
@@ -86,10 +86,10 @@ class AlatModel extends BaseModel
                        COUNT(p.id) as total_peminjaman,
                        COUNT(CASE WHEN p.status = 'DIPINJAM' THEN 1 END) as active_peminjaman
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                LEFT JOIN peminjaman p ON a.id = p.alat_id AND p.deletedAt IS NULL
-                WHERE a.id = :id AND a.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN peminjaman p ON a.id = p.alat_id AND p.deleted_at IS NULL
+                WHERE a.id = :id AND a.deleted_at IS NULL
                 GROUP BY a.id";
 
         return $this->db->fetch($sql, ['id' => $id]);
@@ -100,7 +100,7 @@ class AlatModel extends BaseModel
      */
     public function getAllKategori()
     {
-        $sql = "SELECT id, name FROM kategori_alat WHERE deletedAt IS NULL ORDER BY name ASC";
+        $sql = "SELECT id, name FROM kategori_alat WHERE deleted_at IS NULL ORDER BY name ASC";
         return $this->db->fetchAll($sql);
     }
 
@@ -109,7 +109,7 @@ class AlatModel extends BaseModel
      */
     public function getAllTipe()
     {
-        $sql = "SELECT id, name FROM tipe_alat WHERE deletedAt IS NULL ORDER BY name ASC";
+        $sql = "SELECT id, name FROM tipe_alat WHERE deleted_at IS NULL ORDER BY name ASC";
         return $this->db->fetchAll($sql);
     }
 
@@ -120,8 +120,8 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                WHERE a.kategori_id = :kategori_id AND a.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                WHERE a.kategori_id = :kategori_id AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['kategori_id' => $kategoriId]);
@@ -134,8 +134,8 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                WHERE a.tipe_id = :tipe_id AND a.deletedAt IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                WHERE a.tipe_id = :tipe_id AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['tipe_id' => $tipeId]);
@@ -148,11 +148,11 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
                 WHERE a.status = 'TERSEDIA'
                   AND a.kondisi = 'BAIK'
-                  AND a.deletedAt IS NULL
+                  AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql);
@@ -165,7 +165,7 @@ class AlatModel extends BaseModel
     {
         $sql = "UPDATE {$this->table}
                 SET status = :status, updated_at = NOW()
-                WHERE id = :id AND deletedAt IS NULL";
+                WHERE id = :id AND deleted_at IS NULL";
         return $this->db->query($sql, ['status' => $status, 'id' => $alatId]);
     }
 
@@ -176,7 +176,7 @@ class AlatModel extends BaseModel
     {
         $sql = "UPDATE {$this->table}
                 SET kondisi = :kondisi, updated_at = NOW()
-                WHERE id = :id AND deletedAt IS NULL";
+                WHERE id = :id AND deleted_at IS NULL";
         return $this->db->query($sql, ['kondisi' => $kondisi, 'id' => $alatId]);
     }
 
@@ -187,10 +187,10 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
                 WHERE (a.nama_alat LIKE :query OR a.kode_alat LIKE :query OR a.deskripsi LIKE :query)
-                  AND a.deletedAt IS NULL
+                  AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat
                 LIMIT :limit";
 
@@ -207,9 +207,9 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                WHERE a.kondisi = :kondisi AND a.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                WHERE a.kondisi = :kondisi AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['kondisi' => $kondisi]);
@@ -222,9 +222,9 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                WHERE a.status = :status AND a.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                WHERE a.status = :status AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['status' => $status]);
@@ -237,8 +237,8 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT k.name, COUNT(a.id) as total
                 FROM kategori_alat k
-                LEFT JOIN alat a ON k.id = a.kategori_id AND a.deletedAt IS NULL
-                WHERE k.deletedAt IS NULL
+                LEFT JOIN alat a ON k.id = a.kategori_id AND a.deleted_at IS NULL
+                WHERE k.deleted_at IS NULL
                 GROUP BY k.id, k.name
                 ORDER BY total DESC";
 
@@ -253,19 +253,19 @@ class AlatModel extends BaseModel
         $stats = [];
 
         // Total alat
-        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deletedAt IS NULL";
+        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total'] = $result['total'] ?? 0;
 
         // By status
-        $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deletedAt IS NULL GROUP BY status";
+        $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY status";
         $statusResults = $this->db->fetchAll($sql);
         foreach ($statusResults as $row) {
             $stats['by_status'][strtolower($row['status'])] = $row['total'];
         }
 
         // By condition
-        $sql = "SELECT kondisi, COUNT(*) as total FROM {$this->table} WHERE deletedAt IS NULL GROUP BY kondisi";
+        $sql = "SELECT kondisi, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY kondisi";
         $conditionResults = $this->db->fetchAll($sql);
         foreach ($conditionResults as $row) {
             $stats['by_condition'][strtolower($row['kondisi'])] = $row['total'];
@@ -275,7 +275,7 @@ class AlatModel extends BaseModel
         $stats['by_kategori'] = $this->getAlatCountByKategori();
 
         // Total quantity (sum of all jumlah)
-        $sql = "SELECT SUM(jumlah) as total_quantity FROM {$this->table} WHERE deletedAt IS NULL";
+        $sql = "SELECT SUM(jumlah) as total_quantity FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total_quantity'] = $result['total_quantity'] ?? 0;
 
@@ -287,7 +287,7 @@ class AlatModel extends BaseModel
      */
     public function kodeAlatExists($kodeAlat, $excludeId = null)
     {
-        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE kode_alat = :kode_alat AND deletedAt IS NULL";
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE kode_alat = :kode_alat AND deleted_at IS NULL";
         $params = ['kode_alat' => $kodeAlat];
 
         if ($excludeId) {
@@ -306,9 +306,9 @@ class AlatModel extends BaseModel
     {
         $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                WHERE a.deletedAt IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                WHERE a.deleted_at IS NULL
                 ORDER BY a.created_at DESC
                 LIMIT :limit";
 
@@ -321,7 +321,7 @@ class AlatModel extends BaseModel
      */
     public function softDelete($id)
     {
-        $sql = "UPDATE {$this->table} SET deletedAt = NOW() WHERE id = :id";
+        $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 }

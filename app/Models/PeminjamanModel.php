@@ -8,6 +8,7 @@ class PeminjamanModel extends BaseModel
     protected $table = 'peminjaman';
     protected $fillable = [
         'user_id',
+        'nama_peminjam',
         'alat_id',
         'tanggal_pinjam',
         'tanggal_kembali',
@@ -24,7 +25,7 @@ class PeminjamanModel extends BaseModel
         $limit = $limit ?? Config::ITEMS_PER_PAGE;
         $offset = ($page - 1) * $limit;
 
-        $whereClause = 'WHERE p.deletedAt IS NULL';
+        $whereClause = 'WHERE p.deleted_at IS NULL';
         $params = [];
 
         if (!empty($search)) {
@@ -39,8 +40,8 @@ class PeminjamanModel extends BaseModel
 
         // Get total count
         $countSql = "SELECT COUNT(*) as total FROM peminjaman p
-                     LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                     LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
+                     LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                     LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
                      $whereClause";
 
         $countResult = $this->db->fetch($countSql, $params);
@@ -50,10 +51,10 @@ class PeminjamanModel extends BaseModel
         $sql = "SELECT p.*, u.name as user_name, u.email as user_email, u.foto as user_foto,
                        a.nama_alat, a.kode_alat, k.name as kategori_name, t.name as tipe_name
                 FROM peminjaman p
-                LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
+                LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
                 $whereClause
                 ORDER BY p.created_at DESC
                 LIMIT :limit OFFSET :offset";
@@ -83,11 +84,11 @@ class PeminjamanModel extends BaseModel
                        a.nama_alat, a.kode_alat, a.jumlah, a.kondisi, a.gambar,
                        k.name as kategori_name, t.name as tipe_name
                 FROM peminjaman p
-                LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                WHERE p.id = :id AND p.deletedAt IS NULL";
+                LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                WHERE p.id = :id AND p.deleted_at IS NULL";
 
         return $this->db->fetch($sql, ['id' => $id]);
     }
@@ -107,15 +108,15 @@ class PeminjamanModel extends BaseModel
             }
 
             // Create peminjaman record
-            $sql = "INSERT INTO {$this->table} (user_id, alat_id, tanggal_pinjam, tanggal_kembali, status, keterangan, created_at)
-                    VALUES (:user_id, :alat_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :created_at)";
+            $sql = "INSERT INTO {$this->table} (user_id, nama_peminjam, alat_id, tanggal_pinjam, tanggal_kembali, status, keterangan, created_at)
+                    VALUES (:user_id, :nama_peminjam, :alat_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :created_at)";
 
             $this->db->query($sql, $data);
             $peminjamanId = $this->db->lastInsertId();
 
             // Update alat status if not pending
             if ($data['status'] === 'DIPINJAM') {
-                $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deletedAt IS NULL", [
+                $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
                     'id' => $data['alat_id']
                 ]);
             }
@@ -155,16 +156,16 @@ class PeminjamanModel extends BaseModel
                 $params[$key] = $value;
             }
 
-            $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deletedAt IS NULL";
+            $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL";
             $this->db->query($sql, $params);
 
             // Update alat status
             if ($status === 'SELESAI') {
-                $this->db->query("UPDATE alat SET status = 'TERSEDIA', updated_at = NOW() WHERE id = :id AND deletedAt IS NULL", [
+                $this->db->query("UPDATE alat SET status = 'TERSEDIA', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
                     'id' => $peminjaman['alat_id']
                 ]);
-            } elseif ($status === 'DIPINJAM' && $peminjaman['status'] === 'PENDING') {
-                $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deletedAt IS NULL", [
+            } elseif (in_array($status, ['DIPINJAM', 'DISETUJUI'], true) && $peminjaman['status'] === 'PENDING') {
+                $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
                     'id' => $peminjaman['alat_id']
                 ]);
             }
@@ -205,7 +206,7 @@ class PeminjamanModel extends BaseModel
                 $params[$key] = $value;
             }
 
-            $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deletedAt IS NULL";
+            $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL";
             $this->db->query($sql, $params);
 
             // Update alat status and condition
@@ -221,7 +222,7 @@ class PeminjamanModel extends BaseModel
                 $params[$key] = $value;
             }
 
-            $this->db->query("UPDATE alat SET " . implode(', ', $setClause) . " WHERE id = :id AND deletedAt IS NULL", $params);
+            $this->db->query("UPDATE alat SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL", $params);
 
             $this->db->commit();
             return true;
@@ -240,10 +241,10 @@ class PeminjamanModel extends BaseModel
         $sql = "SELECT p.*, u.name as user_name, u.email as user_email,
                        a.nama_alat, a.kode_alat, k.name as kategori_name
                 FROM peminjaman p
-                LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                WHERE p.status = :status AND p.deletedAt IS NULL
+                LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                WHERE p.status = :status AND p.deleted_at IS NULL
                 ORDER BY p.created_at DESC";
 
         return $this->db->fetchAll($sql, ['status' => $status]);
@@ -256,10 +257,10 @@ class PeminjamanModel extends BaseModel
     {
         $sql = "SELECT p.*, a.nama_alat, a.kode_alat, k.name as kategori_name, t.name as tipe_name
                 FROM peminjaman p
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deletedAt IS NULL
-                WHERE p.user_id = :user_id AND p.deletedAt IS NULL";
+                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                WHERE p.user_id = :user_id AND p.deleted_at IS NULL";
 
         $params = ['user_id' => $userId];
 
@@ -285,8 +286,8 @@ class PeminjamanModel extends BaseModel
     {
         $sql = "SELECT p.*, u.name as user_name, u.email, u.foto
                 FROM peminjaman p
-                LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                WHERE p.alat_id = :alat_id AND p.deletedAt IS NULL";
+                LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                WHERE p.alat_id = :alat_id AND p.deleted_at IS NULL";
 
         $params = ['alat_id' => $alatId];
 
@@ -308,12 +309,12 @@ class PeminjamanModel extends BaseModel
         $sql = "SELECT p.*, u.name as user_name, u.email, u.foto,
                        a.nama_alat, a.kode_alat, k.name as kategori_name
                 FROM peminjaman p
-                LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deletedAt IS NULL
+                LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE p.status = 'DIPINJAM'
                   AND p.tanggal_kembali < CURDATE()
-                  AND p.deletedAt IS NULL
+                  AND p.deleted_at IS NULL
                 ORDER BY p.tanggal_kembali ASC";
 
         return $this->db->fetchAll($sql);
@@ -327,12 +328,12 @@ class PeminjamanModel extends BaseModel
         $stats = [];
 
         // Total peminjaman
-        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deletedAt IS NULL";
+        $sql = "SELECT COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL";
         $result = $this->db->fetch($sql);
         $stats['total'] = $result['total'] ?? 0;
 
         // By status
-        $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deletedAt IS NULL GROUP BY status";
+        $sql = "SELECT status, COUNT(*) as total FROM {$this->table} WHERE deleted_at IS NULL GROUP BY status";
         $statusResults = $this->db->fetchAll($sql);
         foreach ($statusResults as $row) {
             $stats['by_status'][strtolower($row['status'])] = $row['total'];
@@ -342,13 +343,13 @@ class PeminjamanModel extends BaseModel
         $overdueSql = "SELECT COUNT(*) as count FROM peminjaman
                       WHERE status = 'DIPINJAM'
                         AND tanggal_kembali < CURDATE()
-                        AND deletedAt IS NULL";
+                        AND deleted_at IS NULL";
         $overdueResult = $this->db->fetch($overdueSql);
         $stats['overdue'] = $overdueResult['count'] ?? 0;
 
         // Today's peminjaman
         $todaySql = "SELECT COUNT(*) as count FROM peminjaman
-                    WHERE DATE(tanggal_pinjam) = CURDATE() AND deletedAt IS NULL";
+                    WHERE DATE(tanggal_pinjam) = CURDATE() AND deleted_at IS NULL";
         $todayResult = $this->db->fetch($todaySql);
         $stats['today'] = $todayResult['count'] ?? 0;
 
@@ -356,7 +357,7 @@ class PeminjamanModel extends BaseModel
         $monthSql = "SELECT COUNT(*) as count FROM peminjaman
                     WHERE MONTH(tanggal_pinjam) = MONTH(CURDATE())
                       AND YEAR(tanggal_pinjam) = YEAR(CURDATE())
-                      AND deletedAt IS NULL";
+                      AND deleted_at IS NULL";
         $monthResult = $this->db->fetch($monthSql);
         $stats['this_month'] = $monthResult['count'] ?? 0;
 
@@ -368,7 +369,7 @@ class PeminjamanModel extends BaseModel
      */
     public function isAlatAvailable($alatId)
     {
-        $sql = "SELECT status FROM alat WHERE id = :id AND deletedAt IS NULL";
+        $sql = "SELECT status FROM alat WHERE id = :id AND deleted_at IS NULL";
         $result = $this->db->fetch($sql, ['id' => $alatId]);
 
         if (!$result) {
@@ -385,10 +386,10 @@ class PeminjamanModel extends BaseModel
     {
         $sql = "SELECT p.*, u.name as user_name, u.foto
                 FROM peminjaman p
-                LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
+                LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
                 WHERE p.alat_id = :alat_id
                   AND p.status IN ('PENDING', 'DIPINJAM')
-                  AND p.deletedAt IS NULL
+                  AND p.deleted_at IS NULL
                 ORDER BY p.created_at DESC
                 LIMIT 1";
 
@@ -400,7 +401,7 @@ class PeminjamanModel extends BaseModel
      */
     public function softDelete($id)
     {
-        $sql = "UPDATE {$this->table} SET deletedAt = NOW() WHERE id = :id";
+        $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
@@ -413,9 +414,9 @@ class PeminjamanModel extends BaseModel
             $sql = "SELECT p.*, u.name as user_name, u.email as user_email,
                            a.nama_alat, a.kode_alat
                     FROM peminjaman p
-                    LEFT JOIN users u ON p.user_id = u.id AND u.deletedAt IS NULL
-                    LEFT JOIN alat a ON p.alat_id = a.id AND a.deletedAt IS NULL
-                    WHERE p.deletedAt IS NULL
+                    LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
+                    LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                    WHERE p.deleted_at IS NULL
                     ORDER BY p.created_at DESC
                     LIMIT :limit";
 

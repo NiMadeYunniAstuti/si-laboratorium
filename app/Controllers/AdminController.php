@@ -693,6 +693,7 @@ class AdminController extends BaseController
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
+            'alat' => $alatList,
             'alatList' => $alatList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
@@ -971,13 +972,13 @@ class AdminController extends BaseController
 
             // Handle file upload
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = 'public/upload/images/';
+                $uploadDir = __DIR__ . '/../../public/upload/images/';
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
 
-                // Use the renamed filename (already formatted from frontend)
-                $fileName = basename($_FILES['gambar']['name']);
+                $extension = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+                $fileName = 'alat_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . ($extension ? '.' . $extension : '');
                 $targetPath = $uploadDir . $fileName;
 
                 if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
@@ -1017,13 +1018,13 @@ class AdminController extends BaseController
 
             // Handle file upload if new image provided
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-                $uploadDir = 'public/upload/images/';
+                $uploadDir = __DIR__ . '/../../public/upload/images/';
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
 
-                // Use the renamed filename (already formatted from frontend)
-                $fileName = basename($_FILES['gambar']['name']);
+                $extension = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+                $fileName = 'alat_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . ($extension ? '.' . $extension : '');
                 $targetPath = $uploadDir . $fileName;
 
                 if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
@@ -1229,6 +1230,7 @@ class AdminController extends BaseController
 
                 $data = [
                     'user_id' => $userId,
+                    'nama_peminjam' => $_POST['nama_peminjam'] ?? $_SESSION['user_name'] ?? 'User',
                     'alat_id' => $_POST['alat_id'] ?? '',
                     'tanggal_pinjam' => $_POST['tanggal_pinjam'] ?? '',
                     'tanggal_kembali' => $_POST['tanggal_kembali'] ?? '',
@@ -1236,8 +1238,8 @@ class AdminController extends BaseController
                     'status' => 'PENDING'
                 ];
 
-                // Get nama_peminjam from session for notification
-                $namaPeminjam = $_POST['nama_peminjam'] ?? $_SESSION['user_name'] ?? 'User';
+                // Get nama_peminjam from data for notification
+                $namaPeminjam = $data['nama_peminjam'];
 
                 // Validation
                 if (empty($data['alat_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
@@ -1252,6 +1254,14 @@ class AdminController extends BaseController
                     // Get peminjaman details for notification
                     $peminjaman = $this->peminjamanModel->getPeminjamanDetails($peminjamanId);
                     if ($peminjaman) {
+                        // Notify requesting user
+                        $this->notifikasiModel->createNotification(
+                            'Pengajuan Peminjaman Dikirim',
+                            "Pengajuan peminjaman {$peminjaman['nama_alat']} berhasil dikirim dan menunggu persetujuan",
+                            [$userId],
+                            $peminjamanId
+                        );
+
                         // Get all ADMIN users
                         $adminUsers = $this->userModel->getUsersByRole('ADMIN');
                         if ($adminUsers && !empty($adminUsers)) {
@@ -1377,6 +1387,7 @@ class AdminController extends BaseController
                 'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
                 'role' => $userRole
             ],
+            'peminjaman' => $peminjamanList ?? [],
             'peminjamanList' => $peminjamanList ?? [],
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
@@ -1497,6 +1508,49 @@ class AdminController extends BaseController
         unset($_SESSION['success']);
 
         $this->view('notifications/index', $data);
+    }
+
+    /**
+     * Mark notification as read (AJAX)
+     */
+    public function markNotificationRead($id)
+    {
+        header('Content-Type: application/json');
+
+        if (!$this->isLoggedIn()) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $userId = $_SESSION['user_id'];
+            $result = $this->notifikasiModel->markAsRead($id, $userId);
+            echo json_encode(['success' => $result ? true : false]);
+        } catch (Exception $e) {
+            error_log("Mark notification read error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Failed to mark notification as read']);
+        }
+    }
+
+    /**
+     * Delete notification (AJAX)
+     */
+    public function deleteNotification($id)
+    {
+        header('Content-Type: application/json');
+
+        if (!$this->isLoggedIn()) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $result = $this->notifikasiModel->deleteNotificationForUser($id, $_SESSION['user_id']);
+            echo json_encode(['success' => $result ? true : false]);
+        } catch (Exception $e) {
+            error_log("Delete notification error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Failed to delete notification']);
+        }
     }
 
     /**

@@ -6,6 +6,8 @@
     <title>Notifikasi - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
     <style>
         /* Minimal custom styles - using Bootstrap 5.3 components */
@@ -63,20 +65,24 @@
                 <i class="bi bi-speedometer2"></i>
                 Dashboard
             </a>
-            <a href="/users" class="sidebar-menu-item">
-                <i class="bi bi-people"></i>
-                Data User
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
+                <a href="/users" class="sidebar-menu-item">
+                    <i class="bi bi-people"></i>
+                    Data User
+                </a>
+            <?php endif; ?>
             <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
                 <a href="/alat" class="sidebar-menu-item">
                     <i class="bi bi-wrench"></i>
                     Manajemen Alat
                 </a>
             <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
+            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
+                <a href="/peminjaman" class="sidebar-menu-item">
+                    <i class="bi bi-hand-index"></i>
+                    Peminjaman
+                </a>
+            <?php endif; ?>
             <a href="/settings" class="sidebar-menu-item">
                 <i class="bi bi-gear"></i>
                 Settings
@@ -84,26 +90,53 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="user-profile">
-                <img src="/images/default-avatar.png" alt="User Avatar" class="user-avatar">
-                <div class="user-info">
-                    <div class="user-name"><?php echo htmlspecialchars($user['name'] ?? 'Admin User'); ?></div>
-                    <div class="user-role"><?php echo htmlspecialchars($user['role'] ?? 'USER'); ?></div>
-                </div>
-                <div class="dropdown">
-                    <button class="btn btn-link text-white p-0" data-bs-toggle="dropdown">
-                        <i class="bi bi-three-dots-vertical"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/settings/profile">Profil</a></li>
-                        <li><a class="dropdown-item" href="/settings/privacy-security">Privasi & Keamanan</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="/logout">Keluar</a></li>
-                    </ul>
+            <a href="/logout" class="sidebar-menu-item logout-item">
+                <i class="bi bi-box-arrow-right"></i>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- Top Navbar -->
+    <nav class="top-navbar" id="topNavbar">
+        <div class="d-flex align-items-center">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="navbar-right">
+            <div class="d-flex align-items-center">
+                <!-- Notification Icon -->
+                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
+                    <i class="bi bi-bell"></i>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?php echo $unreadNotificationCount; ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
+                </a>
+
+                <!-- User Profile -->
+                <div class="user-profile">
+                    <div class="user-info text-end">
+                        <div class="user-name"><?php echo htmlspecialchars($user['name'] ?? 'Admin User'); ?></div>
+                        <div class="user-role"><?php echo htmlspecialchars($user['role'] ?? 'USER'); ?></div>
+                    </div>
+                    <div class="user-avatar ms-2">
+                        <?php echo substr($user['name'] ?? 'Admin User', 0, 1); ?>
+                    </div>
                 </div>
             </div>
         </div>
-    </aside>
+    </nav>
 
     <main class="main-content">
         <!-- Flash Messages -->
@@ -164,11 +197,19 @@
                                                     </small>
                                                 </div>
                                                 <div class="notification-actions">
-                                                    <?php if (!$notification['is_read']): ?>
+                                                    <?php if (!($notification['is_read'] ?? false) && !($notification['user_read'] ?? false)): ?>
                                                         <button type="button" class="btn btn-sm btn-outline-primary mark-read-btn"
                                                                 data-id="<?php echo $notification['id']; ?>" title="Tandai dibaca">
                                                             <i class="bi bi-check"></i>
                                                         </button>
+                                                    <?php endif; ?>
+                                                    <?php if (($user['role'] ?? 'USER') === 'ADMIN' && !empty($notification['peminjaman_id'])): ?>
+                                                        <a href="/peminjaman/<?php echo $notification['peminjaman_id']; ?>/detail"
+                                                           class="btn btn-sm btn-outline-info go-to-peminjaman"
+                                                           data-id="<?php echo $notification['id']; ?>"
+                                                           title="Pergi ke peminjaman">
+                                                            <i class="bi bi-box-arrow-up-right"></i>
+                                                        </a>
                                                     <?php endif; ?>
                                                     <button type="button" class="btn btn-sm btn-outline-danger delete-notification-btn"
                                                             data-id="<?php echo $notification['id']; ?>" title="Hapus">
@@ -195,13 +236,28 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="/assets/js/dashboard.js"></script>
     <script>
+
         // Mark notification as read
         document.querySelectorAll('.mark-read-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const notificationId = this.dataset.id;
                 markAsRead(notificationId);
+            });
+        });
+
+        document.querySelectorAll('.go-to-peminjaman').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const notificationId = this.dataset.id;
+                if (notificationId) {
+                    e.preventDefault();
+                    markAsRead(notificationId, () => {
+                        window.location.href = this.getAttribute('href');
+                    });
+                }
             });
         });
 
@@ -215,7 +271,7 @@
             });
         });
 
-        function markAsRead(id) {
+        function markAsRead(id, onDone) {
             fetch(`/notifications/mark-read/${id}`, {
                 method: 'POST'
             })
@@ -223,16 +279,23 @@
             .then(data => {
                 if (data.success) {
                     const item = document.querySelector(`[data-id="${id}"]`);
-                    item.classList.remove('unread');
-                    item.dataset.read = '1';
+                    if (item) {
+                        item.classList.remove('unread');
+                        item.dataset.read = '1';
 
-                    // Remove mark read button
-                    const markBtn = item.querySelector('.mark-read-btn');
-                    if (markBtn) {
-                        markBtn.remove();
+                        // Remove mark read button
+                        const markBtn = item.querySelector('.mark-read-btn');
+                        if (markBtn) {
+                            markBtn.remove();
+                        }
+
+                        updateUnreadCount();
                     }
-
-                    updateUnreadCount();
+                }
+            })
+            .finally(() => {
+                if (onDone) {
+                    onDone();
                 }
             });
         }
@@ -315,5 +378,47 @@
         }
     }
     ?>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

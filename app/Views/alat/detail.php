@@ -6,6 +6,8 @@
     <title>Detail Alat - LBMS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
 </head>
 <body>
@@ -58,6 +60,12 @@
             <button class="sidebar-toggle" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
+            <!-- Global Search -->
+            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
+                <select id="globalSearch" class="form-select" style="width: 100%;">
+                    <option value="">Cari</option>
+                </select>
+            </div>
         </div>
 
         <div class="navbar-right">
@@ -65,10 +73,12 @@
                 <!-- Notification Icon -->
                 <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
                     <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        3
-                        <span class="visually-hidden">unread notifications</span>
-                    </span>
+                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <?= $unreadNotificationCount ?>
+                            <span class="visually-hidden">unread notifications</span>
+                        </span>
+                    <?php endif; ?>
                 </a>
 
                 <!-- User Profile -->
@@ -118,10 +128,10 @@
                         <h5 class="mb-0">Foto Alat</h5>
                     </div>
                     <div class="card-body text-center">
-                        <?php if ($alatDetail['gambar'] ?? null): ?>
-                            <img src="/images/alat/<?= htmlspecialchars($alatDetail['gambar']) ?>"
+                        <?php if (!empty($alatDetail['gambar'])): ?>
+                            <img src="/<?= ltrim(htmlspecialchars($alatDetail['gambar']), '/') ?>"
                                  class="img-fluid rounded mb-3"
-                                 alt="<?= htmlspecialchars($alatDetail['nama'] ?? 'Alat') ?>"
+                                 alt="<?= htmlspecialchars($alatDetail['nama_alat'] ?? 'Alat') ?>"
                                  style="max-height: 200px;">
                         <?php else: ?>
                             <div class="bg-light rounded d-flex align-items-center justify-content-center"
@@ -130,32 +140,40 @@
                             </div>
                         <?php endif; ?>
 
-                        <h4><?= htmlspecialchars($alatDetail['nama'] ?? 'Nama Alat') ?></h4>
-                        <p class="text-muted">Kode: <?= htmlspecialchars($alatDetail['kode'] ?? 'ALT001') ?></p>
+                        <h4><?= htmlspecialchars($alatDetail['nama_alat'] ?? 'Nama Alat') ?></h4>
+                        <p class="text-muted">Kode: <?= htmlspecialchars($alatDetail['kode_alat'] ?? '-') ?></p>
 
                         <div class="mb-3">
                             <?php
-                            $status = $alatDetail['status'] ?? 'tersedia';
+                            $status = strtoupper($alatDetail['status'] ?? 'TERSEDIA');
                             $statusColors = [
-                                'tersedia' => 'success',
-                                'dipinjam' => 'warning',
-                                'maintenance' => 'info',
-                                'rusak' => 'danger'
+                                'TERSEDIA' => 'success',
+                                'DIPINJAM' => 'warning',
+                                'MAINTENANCE' => 'info',
+                                'RUSAK' => 'danger'
                             ];
                             $colorClass = $statusColors[$status] ?? 'secondary';
                             ?>
                             <span class="badge bg-<?= $colorClass ?>">
-                                <?= ucfirst(htmlspecialchars($status)) ?>
+                                <?= ucfirst(strtolower(htmlspecialchars($status))) ?>
                             </span>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editAlatModal">
+                            <a class="btn btn-outline-primary" href="/alat/<?= $alatDetail['id'] ?? '' ?>/edit">
                                 <i class="bi bi-pencil me-2"></i>Edit Alat
-                            </button>
-                            <button class="btn btn-outline-warning" onclick="changeStatus()">
-                                <i class="bi bi-arrow-repeat me-2"></i>Ubah Status
-                            </button>
+                            </a>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <select class="form-select" id="alatStatusSelect" style="">
+                                    <option value="TERSEDIA" <?= $status === 'TERSEDIA' ? 'selected' : '' ?>>Tersedia</option>
+                                    <option value="DIPINJAM" <?= $status === 'DIPINJAM' ? 'selected' : '' ?>>Dipinjam</option>
+                                    <option value="MAINTENANCE" <?= $status === 'MAINTENANCE' ? 'selected' : '' ?>>Maintenance</option>
+                                    <option value="RUSAK" <?= $status === 'RUSAK' ? 'selected' : '' ?>>Rusak</option>
+                                </select>
+                                <button class="btn btn-outline-primary" id="applyStatusChange">
+                                    <i class="bi bi-check2-circle me-2"></i>Ubah Status
+                                </button>
+                            </div>
                             <button class="btn btn-outline-danger" onclick="deleteAlat()">
                                 <i class="bi bi-trash me-2"></i>Hapus
                             </button>
@@ -175,13 +193,13 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label text-muted">Nama Alat</label>
-                                    <p class="form-control-plaintext"><?= htmlspecialchars($alatDetail['nama'] ?? '-') ?></p>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars($alatDetail['nama_alat'] ?? '-') ?></p>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Tahun Pembuatan</label>
-                                    <p class="form-control-plaintext"><?= htmlspecialchars($alatDetail['tahun'] ?? '-') ?></p>
+                                    <label class="form-label text-muted">Tahun Pembelian</label>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars($alatDetail['tahun_pembelian'] ?? '-') ?></p>
                                 </div>
                             </div>
                         </div>
@@ -192,7 +210,7 @@
                                     <label class="form-label text-muted">Status</label>
                                     <p class="form-control-plaintext">
                                         <span class="badge bg-<?= $colorClass ?>">
-                                            <?= ucfirst(htmlspecialchars($status)) ?>
+                                            <?= ucfirst(strtolower(htmlspecialchars($status))) ?>
                                         </span>
                                     </p>
                                 </div>
@@ -200,7 +218,7 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label text-muted">Kode Alat</label>
-                                    <p class="form-control-plaintext"><?= htmlspecialchars($alatDetail['kode'] ?? 'ALT001') ?></p>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars($alatDetail['kode_alat'] ?? '-') ?></p>
                                 </div>
                             </div>
                         </div>
@@ -208,7 +226,7 @@
                         <div class="mb-3">
                             <label class="form-label text-muted">Keterangan</label>
                             <p class="form-control-plaintext">
-                                <?= nl2br(htmlspecialchars($alatDetail['keterangan'] ?? 'Tidak ada keterangan')) ?>
+                                <?= nl2br(htmlspecialchars($alatDetail['deskripsi'] ?? 'Tidak ada keterangan')) ?>
                             </p>
                         </div>
 
@@ -227,106 +245,16 @@
                             </div>
                         </div>
 
-                        <hr>
-
-                        <h6 class="text-primary mb-3">
-                            <i class="bi bi-clock-history me-1"></i>Riwayat Peminjaman
-                        </h6>
-
-                        <!-- Sample loan history -->
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>No Peminjaman</th>
-                                        <th>Peminjam</th>
-                                        <th>Tanggal Pinjam</th>
-                                        <th>Tanggal Kembali</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>TRX001</td>
-                                        <td>John Doe</td>
-                                        <td>15/12/2024</td>
-                                        <td>18/12/2024</td>
-                                        <td><span class="badge bg-success">Selesai</span></td>
-                                    </tr>
-                                    <tr>
-                                        <td>TRX002</td>
-                                        <td>Jane Smith</td>
-                                        <td>12/12/2024</td>
-                                        <td>-</td>
-                                        <td><span class="badge bg-warning">Berjalan</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Edit Alat Modal -->
-        <div class="modal fade" id="editAlatModal" tabindex="-1" aria-labelledby="editAlatModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editAlatModalLabel">
-                            <i class="bi bi-pencil me-2"></i>Edit Alat
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form method="POST" action="/alat/update/<?= $alatDetail['id'] ?? '' ?>" id="editAlatForm" enctype="multipart/form-data">
-                        <div class="modal-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="editNama" class="form-label">Nama Alat</label>
-                                        <input type="text" class="form-control" id="editNama" name="nama" value="<?= htmlspecialchars($alatDetail['nama'] ?? '') ?>" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="editTahun" class="form-label">Tahun Pembuatan</label>
-                                        <input type="number" class="form-control" id="editTahun" name="tahun" value="<?= htmlspecialchars($alatDetail['tahun'] ?? '') ?>" min="1900" max="<?= date('Y') ?>" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="editStatus" class="form-label">Status</label>
-                                        <select class="form-control" id="editStatus" name="status" required>
-                                            <option value="tersedia" <?= ($alatDetail['status'] ?? '') === 'tersedia' ? 'selected' : '' ?>>Tersedia</option>
-                                            <option value="dipinjam" <?= ($alatDetail['status'] ?? '') === 'dipinjam' ? 'selected' : '' ?>>Dipinjam</option>
-                                            <option value="maintenance" <?= ($alatDetail['status'] ?? '') === 'maintenance' ? 'selected' : '' ?>>Maintenance</option>
-                                            <option value="rusak" <?= ($alatDetail['status'] ?? '') === 'rusak' ? 'selected' : '' ?>>Rusak</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="editKeterangan" class="form-label">Keterangan</label>
-                                        <textarea class="form-control" id="editKeterangan" name="keterangan" rows="4"><?= htmlspecialchars($alatDetail['keterangan'] ?? '') ?></textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="editGambar" class="form-label">Ganti Foto Alat (opsional)</label>
-                                        <input type="file" class="form-control" id="editGambar" name="gambar" accept="image/*">
-                                        <small class="form-text text-muted">Biarkan kosong jika tidak ingin mengubah foto</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle me-2"></i>Simpan Perubahan
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             // Sidebar toggle functionality
@@ -353,36 +281,24 @@
             });
 
             // Action functions
-            window.changeStatus = function() {
-                const currentStatus = '<?= $alatDetail['status'] ?? 'tersedia' ?>';
-                const newStatus = prompt('Masukkan status baru (tersedia/dipinjam/maintenance/rusak):', currentStatus);
+            $('#applyStatusChange').on('click', function() {
+                const newStatus = $('#alatStatusSelect').val();
+                const currentStatus = '<?= strtoupper($alatDetail['status'] ?? 'TERSEDIA') ?>';
 
-                if (newStatus && ['tersedia', 'dipinjam', 'maintenance', 'rusak'].includes(newStatus.toLowerCase())) {
-                    window.location.href = '/alat/change-status/<?= $alatDetail['id'] ?? '' ?>/' + newStatus.toLowerCase();
-                } else if (newStatus) {
-                    alert('Status tidak valid. Pilih: tersedia, dipinjam, maintenance, atau rusak');
+                if (!newStatus || newStatus === currentStatus) {
+                    return;
                 }
-            };
+
+                if (confirm(`Ubah status alat menjadi ${newStatus}?`)) {
+                    window.location.href = '/alat/change-status/<?= $alatDetail['id'] ?? '' ?>/' + newStatus;
+                }
+            });
 
             window.deleteAlat = function() {
                 if (confirm('Apakah Anda yakin ingin menghapus alat ini? Tindakan ini tidak dapat dibatalkan.')) {
                     window.location.href = '/alat/delete/<?= $alatDetail['id'] ?? '' ?>';
                 }
             };
-
-            // Form validation
-            $('#editAlatForm').on('submit', function(e) {
-                const tahun = parseInt($('#editTahun').val());
-                const tahunSekarang = new Date().getFullYear();
-
-                if (tahun < 1900 || tahun > tahunSekarang) {
-                    e.preventDefault();
-                    alert(`Tahun harus antara 1900 dan ${tahunSekarang}`);
-                    return false;
-                }
-
-                return true;
-            });
 
             // Mobile sidebar handling
             if ($(window).width() <= 768) {
@@ -392,5 +308,47 @@
             }
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            const $search = $('#globalSearch');
+            if (!$search.length || !$.fn.select2) {
+                return;
+            }
+
+            const searchItems = [
+                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
+                { id: 'users', text: 'Users', url: '/users' },
+                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
+                { id: 'alat', text: 'Alat', url: '/alat' },
+                { id: 'profile', text: 'Profile', url: '/settings/profile' },
+{ id: 'notifications', text: 'Notifications', url: '/notifications' },
+            ];
+
+            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
+            const filteredSearchItems = searchItems.filter(item => {
+                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+                    return false;
+                }
+                return true;
+            });
+
+            $search.select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Cari',
+                allowClear: true,
+                data: filteredSearchItems
+            });
+
+            $search.on('select2:select', function(e) {
+                const url = e.params.data && e.params.data.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

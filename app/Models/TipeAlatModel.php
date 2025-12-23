@@ -16,7 +16,7 @@ class TipeAlatModel extends BaseModel
     public function getAllTipe()
     {
         $sql = "SELECT * FROM {$this->table}
-                WHERE deletedAt IS NULL
+                WHERE deleted_at IS NULL
                 ORDER BY name ASC";
 
         return $this->db->fetchAll($sql);
@@ -28,7 +28,7 @@ class TipeAlatModel extends BaseModel
     public function getTipeById($id)
     {
         $sql = "SELECT * FROM {$this->table}
-                WHERE id = :id AND deletedAt IS NULL";
+                WHERE id = :id AND deleted_at IS NULL";
 
         return $this->db->fetch($sql, ['id' => $id]);
     }
@@ -56,7 +56,7 @@ class TipeAlatModel extends BaseModel
      */
     public function deleteTipe($id)
     {
-        $sql = "UPDATE {$this->table} SET deletedAt = NOW() WHERE id = :id";
+        $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
@@ -67,8 +67,8 @@ class TipeAlatModel extends BaseModel
     {
         $sql = "SELECT t.*, COUNT(a.id) as jumlah_alat
                 FROM {$this->table} t
-                LEFT JOIN alat a ON t.id = a.tipe_id AND a.deletedAt IS NULL
-                WHERE t.deletedAt IS NULL
+                LEFT JOIN alat a ON t.id = a.tipe_id AND a.deleted_at IS NULL
+                WHERE t.deleted_at IS NULL
                 GROUP BY t.id
                 ORDER BY t.name ASC";
 
