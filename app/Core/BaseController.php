@@ -206,6 +206,18 @@ class BaseController
     }
 
     /**
+     * Require admin role
+     */
+    protected function requireAdmin()
+    {
+        if (!$this->isLoggedIn() || ($_SESSION['user_role'] ?? '') !== 'ADMIN') {
+            $_SESSION['error'] = 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.';
+            $this->redirect('/dashboard');
+            exit;
+        }
+    }
+
+    /**
      * Get current user data for views
      */
     protected function getUser()

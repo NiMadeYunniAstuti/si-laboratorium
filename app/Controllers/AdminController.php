@@ -6,9 +6,10 @@
 class AdminController extends BaseController
 {
     private $alatModel;
+    private $ruanganModel;
     private $peminjamanModel;
     private $userModel;
-    private $kategoriAlatModel;
+    private $kategoriModel;
     private $tipeAlatModel;
     private $notifikasiModel;
 
@@ -16,9 +17,10 @@ class AdminController extends BaseController
     {
         parent::__construct();
         $this->alatModel = new AlatModel();
+        $this->ruanganModel = new RuanganModel();
         $this->peminjamanModel = new PeminjamanModel();
         $this->userModel = new UserModel();
-        $this->kategoriAlatModel = new KategoriAlatModel();
+        $this->kategoriModel = new KategoriModel();
         $this->tipeAlatModel = new TipeAlatModel();
         $this->notifikasiModel = new NotifikasiModel();
     }
@@ -79,9 +81,6 @@ class AdminController extends BaseController
             $data['recentPeminjaman'] = $recentPeminjaman;
 
             error_log("Recent peminjaman count: " . count($recentPeminjaman));
-            if (!empty($recentPeminjaman)) {
-                error_log("First peminjaman record: " . print_r($recentPeminjaman[0], true));
-            }
         } catch (Exception $e) {
             error_log("Recent peminjaman error: " . $e->getMessage());
             $data['recentPeminjaman'] = [];
@@ -341,11 +340,7 @@ class AdminController extends BaseController
      */
     public function users()
     {
-        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
-            $_SESSION['error'] = 'Akses ditolak. Hanya admin yang dapat mengakses halaman ini.';
-            $this->redirect('/dashboard');
-            return;
-        }
+        $this->requireAdmin();
 
         try {
             $page = $_GET['page'] ?? 1;
@@ -443,11 +438,7 @@ class AdminController extends BaseController
      */
     public function updateUser($userId)
     {
-        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
-            $_SESSION['error'] = 'Unauthorized access';
-            $this->redirect('/dashboard');
-            return;
-        }
+        $this->requireAdmin();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/users');
@@ -509,10 +500,7 @@ class AdminController extends BaseController
      */
     public function toggleUserStatus($userId)
     {
-        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
-            $this->redirect('/dashboard');
-            return;
-        }
+        $this->requireAdmin();
 
         if ($userId == $_SESSION['user_id']) {
             $_SESSION['error'] = 'Tidak dapat mengubah status sendiri';
@@ -541,10 +529,7 @@ class AdminController extends BaseController
     {
         header('Content-Type: application/json');
 
-        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-            exit;
-        }
+        $this->requireAdmin();
 
         if ($userId == $_SESSION['user_id']) {
             echo json_encode(['success' => false, 'message' => 'Tidak dapat mengubah status sendiri']);
@@ -625,12 +610,7 @@ class AdminController extends BaseController
      */
     public function manajemenAlat()
     {
-        if (!$this->isLoggedIn()) {
-            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
-            $this->redirect('/login');
-            return;
-        }
-
+        $this->requireAdmin();
         try {
             $alatModel = new AlatModel();
             $result = $alatModel->getAlatPaginated(1, 1000); 
@@ -649,6 +629,7 @@ class AdminController extends BaseController
             ],
             'alat' => $alatList,
             'alatList' => $alatList,
+            'ruanganList' => $ruanganList ?? [],
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -664,11 +645,7 @@ class AdminController extends BaseController
      */
     public function newAlat()
     {
-        if (!$this->isLoggedIn()) {
-            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
-            $this->redirect('/login');
-            return;
-        }
+        $this->requireAdmin();
 
         try {
             $kategoriList = $this->alatModel->getAllKategori();
@@ -707,6 +684,8 @@ class AdminController extends BaseController
      */
     public function detailAlat($id)
     {
+        $this->requireAdmin();
+
         $alatData = $this->alatModel->getAlatDetails($id);
 
         if (!$alatData) {
@@ -738,11 +717,7 @@ class AdminController extends BaseController
      */
     public function editAlat($id)
     {
-        if (!$this->isLoggedIn()) {
-            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
-            $this->redirect('/login');
-            return;
-        }
+        $this->requireAdmin();
 
         $alatData = $this->alatModel->getAlatDetails($id);
 
@@ -877,6 +852,8 @@ class AdminController extends BaseController
      */
     public function createAlat()
     {
+        $this->requireAdmin();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $kode_alat = $_POST['kode_alat'] ?? '';
 
@@ -891,7 +868,8 @@ class AdminController extends BaseController
                         'tipe_id' => $_POST['tipe_id'] ?? null,
                         'tahun_pembelian' => $_POST['tahun_pembelian'] ?? null,
                         'status' => $_POST['status'] ?? 'TERSEDIA',
-                        'deskripsi' => $_POST['deskripsi'] ?? ''
+                        'deskripsi' => $_POST['deskripsi'] ?? '',
+                'jumlah' => $_POST['stok'] ?? $_POST['jumlah'] ?? 1
                     ];
                     $this->redirect('/alat/new');
                     return;
@@ -907,7 +885,8 @@ class AdminController extends BaseController
                 'tipe_id' => $_POST['tipe_id'] ?? null,
                 'tahun_pembelian' => $_POST['tahun_pembelian'] ?? null,
                 'status' => $_POST['status'] ?? 'TERSEDIA',
-                'deskripsi' => $_POST['deskripsi'] ?? ''
+                'deskripsi' => $_POST['deskripsi'] ?? '',
+                'jumlah' => $_POST['stok'] ?? $_POST['jumlah'] ?? 1
             ];
 
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
@@ -943,6 +922,8 @@ class AdminController extends BaseController
      */
     public function updateAlat($id)
     {
+        $this->requireAdmin();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'nama_alat' => $_POST['nama_alat'] ?? '',
@@ -950,7 +931,8 @@ class AdminController extends BaseController
                 'tipe_id' => $_POST['tipe_id'] ?? '',
                 'tahun_pembelian' => $_POST['tahun_pembelian'] ?? '',
                 'status' => $_POST['status'] ?? 'TERSEDIA',
-                'deskripsi' => $_POST['deskripsi'] ?? ''
+                'deskripsi' => $_POST['deskripsi'] ?? '',
+                'jumlah' => $_POST['stok'] ?? $_POST['jumlah'] ?? 1
             ];
 
             if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
@@ -987,6 +969,17 @@ class AdminController extends BaseController
      */
     public function deleteAlat($id)
     {
+        $this->requireAdmin();
+
+        // Check for active loans before deleting
+        $activeLoans = $this->peminjamanModel->getPeminjamanByAlat($id, 'DIPINJAM');
+        $pendingLoans = $this->peminjamanModel->getPeminjamanByAlat($id, 'PENDING');
+        if (!empty($activeLoans) || !empty($pendingLoans)) {
+            $_SESSION['error'] = 'Alat tidak dapat dihapus karena sedang dipinjam';
+            $this->redirect('/alat');
+            return;
+        }
+
         try {
             $alat = $this->alatModel->getAlatDetails($id);
 
@@ -996,8 +989,7 @@ class AdminController extends BaseController
                 $this->notifikasiModel->createNotification(
                     'Alat Dihapus',
                     "Alat '{$alat['nama_alat']}' telah dihapus",
-                    'admin',
-                    [$this->currentUser['id']]
+                    [$_SESSION['user_id']]
                 );
             }
 
@@ -1014,6 +1006,8 @@ class AdminController extends BaseController
      */
     public function changeAlatStatus($id, $status)
     {
+        $this->requireAdmin();
+
         try {
             $this->alatModel->updateStatus($id, $status);
             $_SESSION['success'] = 'Status alat berhasil diubah';
@@ -1029,12 +1023,9 @@ class AdminController extends BaseController
      */
     public function updateAlatStatus($alatId)
     {
-        header('Content-Type: application/json');
+        $this->requireAdmin();
 
-        if (!$this->isLoggedIn() || $_SESSION['user_role'] !== 'ADMIN') {
-            echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-            exit;
-        }
+        header('Content-Type: application/json');
 
         try {
             $input = json_decode(file_get_contents('php://input'), true);
@@ -1062,6 +1053,376 @@ class AdminController extends BaseController
         }
         exit;
     }
+    /**
+     * Show Manajemen Ruangan page
+     */
+    public function manajemenRuangan()
+    {
+        $this->requireAdmin();
+
+        try {
+            $page = $_GET['page'] ?? 1;
+            $search = $_GET['search'] ?? '';
+            $status = $_GET['status'] ?? '';
+
+            $result = $this->ruanganModel->getRuanganPaginated($page, 10, $search, $status);
+            $ruanganList = $result['data'] ?? [];
+
+            $data = [
+                'title' => 'Manajemen Ruangan - LBMS',
+                'user' => [
+                    'name' => $_SESSION['user_name'] ?? 'Admin User',
+                    'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
+                    'role' => $_SESSION['user_role'] ?? 'ADMIN'
+                ],
+                'alat' => $ruanganList,
+                'alatList' => $ruanganList,
+                'search' => $search,
+                'status' => $status,
+                'total' => $result['total'] ?? 0,
+                'page' => $result['page'] ?? 1,
+                'total_pages' => $result['total_pages'] ?? 1,
+                'error' => $_SESSION['error'] ?? null,
+                'success' => $_SESSION['success'] ?? null
+            ];
+
+            unset($_SESSION['error']);
+            unset($_SESSION['success']);
+
+            $this->view('ruangan/index', $data);
+        } catch (Exception $e) {
+            error_log("Manajemen Ruangan error: " . $e->getMessage());
+            $_SESSION['error'] = 'Gagal memuat data ruangan';
+            $this->redirect('/dashboard');
+        }
+    }
+
+    /**
+     * Show new ruangan page
+     */
+    public function newRuangan()
+    {
+        $this->requireAdmin();
+
+        try {
+            $kategoriList = $this->ruanganModel->getAllKategori();
+            $tipeList = [];
+        } catch (Exception $e) {
+            error_log("Error fetching kategori data: " . $e->getMessage());
+            $kategoriList = [];
+            $tipeList = [];
+        }
+
+        $oldInput = $_SESSION['old_input'] ?? [];
+
+        $data = [
+            'title' => 'Tambah Ruangan Baru - LBMS',
+            'user' => [
+                'name' => $_SESSION['user_name'] ?? 'Admin User',
+                'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
+                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+            ],
+            'kategoriList' => $kategoriList,
+            'tipeList' => $tipeList,
+            'error' => $_SESSION['error'] ?? null,
+            'success' => $_SESSION['success'] ?? null,
+            'oldInput' => $oldInput
+        ];
+
+        unset($_SESSION['error']);
+        unset($_SESSION['success']);
+        unset($_SESSION['old_input']);
+
+        $this->view('ruangan/new', $data);
+    }
+
+    /**
+     * Show ruangan detail page
+     */
+    public function detailRuangan($id)
+    {
+        $this->requireAdmin();
+
+        $ruanganData = $this->ruanganModel->getRuanganById($id);
+
+        if (!$ruanganData) {
+            $_SESSION['error'] = 'Ruangan tidak ditemukan';
+            $this->redirect('/ruangan');
+            return;
+        }
+
+        $data = [
+            'title' => 'Detail Ruangan - LBMS',
+            'user' => [
+                'name' => $_SESSION['user_name'] ?? 'Admin User',
+                'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
+                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+            ],
+            'ruanganDetail' => $ruanganData,
+            'error' => $_SESSION['error'] ?? null,
+            'success' => $_SESSION['success'] ?? null
+        ];
+
+        unset($_SESSION['error']);
+        unset($_SESSION['success']);
+
+        $this->view('ruangan/detail', $data);
+    }
+
+    /**
+     * Show edit ruangan page
+     */
+    public function editRuangan($id)
+    {
+        $this->requireAdmin();
+
+        $ruanganData = $this->ruanganModel->getRuanganById($id);
+
+        if (!$ruanganData) {
+            $_SESSION['error'] = 'Ruangan tidak ditemukan';
+            $this->redirect('/ruangan');
+            return;
+        }
+
+        try {
+            $kategoriList = $this->ruanganModel->getAllKategori();
+        } catch (Exception $e) {
+            error_log("Error fetching kategori data: " . $e->getMessage());
+            $kategoriList = [];
+        }
+
+        $data = [
+            'title' => 'Edit Ruangan - LBMS',
+            'user' => [
+                'name' => $_SESSION['user_name'] ?? 'Admin User',
+                'email' => $_SESSION['user_email'] ?? 'admin@lbms.com',
+                'role' => $_SESSION['user_role'] ?? 'ADMIN'
+            ],
+            'ruanganDetail' => $ruanganData,
+            'kategoriList' => $kategoriList,
+            'error' => $_SESSION['error'] ?? null,
+            'success' => $_SESSION['success'] ?? null
+        ];
+
+        unset($_SESSION['error']);
+        unset($_SESSION['success']);
+
+        $this->view('ruangan/edit', $data);
+    }
+
+    /**
+     * Create new ruangan
+     */
+    public function createRuangan()
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/ruangan/new');
+            return;
+        }
+
+        $kode_ruangan = $_POST['kode_ruangan'] ?? $_POST['kode_alat'] ?? '';
+
+        try {
+            $exists = $this->ruanganModel->kodeRuanganExists($kode_ruangan);
+            if ($exists) {
+                $_SESSION['error'] = "Kode ruangan '$kode_ruangan' sudah terdaftar. Silakan gunakan kode lain.";
+                $_SESSION['old_input'] = [
+                    'kode_ruangan' => $kode_ruangan,
+                    'nama_ruangan' => $_POST['nama_ruangan'] ?? $_POST['nama_alat'] ?? '',
+                    'kategori_id' => $_POST['kategori_id'] ?? null,
+                    'status' => $_POST['status'] ?? 'TERSEDIA',
+                    'deskripsi' => $_POST['deskripsi'] ?? '',
+                    'kapasitas' => $_POST['kapasitas'] ?? $_POST['jumlah'] ?? 1,
+                    'lantai' => $_POST['lantai'] ?? 1,
+                    'gedung' => $_POST['gedung'] ?? ''
+                ];
+                $this->redirect('/ruangan/new');
+                return;
+            }
+        } catch (Exception $e) {
+            error_log("Error checking kode_ruangan: " . $e->getMessage());
+        }
+
+        $data = [
+            'kode_ruangan' => $kode_ruangan,
+            'nama_ruangan' => $_POST['nama_ruangan'] ?? $_POST['nama_alat'] ?? '',
+            'kategori_id' => $_POST['kategori_id'] ?? null,
+            'status' => $_POST['status'] ?? 'TERSEDIA',
+            'deskripsi' => $_POST['deskripsi'] ?? '',
+            'kapasitas' => $_POST['kapasitas'] ?? $_POST['jumlah'] ?? 1,
+            'lantai' => $_POST['lantai'] ?? 1,
+            'gedung' => $_POST['gedung'] ?? ''
+        ];
+
+        if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../../public/upload/images/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $extension = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+            $fileName = 'ruangan_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . ($extension ? '.' . $extension : '');
+            $targetPath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
+                $data['gambar'] = 'upload/images/' . $fileName;
+            }
+        }
+
+        try {
+            $this->ruanganModel->create($data);
+            $_SESSION['success'] = 'Ruangan berhasil ditambahkan';
+            $this->redirect('/ruangan');
+        } catch (Exception $e) {
+            error_log("Create ruangan error: " . $e->getMessage());
+            $_SESSION['error'] = 'Gagal menambahkan ruangan: ' . $e->getMessage();
+            $_SESSION['old_input'] = $data;
+            $this->redirect('/ruangan/new');
+        }
+    }
+
+    /**
+     * Update ruangan
+     */
+    public function updateRuangan($id)
+    {
+        $this->requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/ruangan/' . $id . '/edit');
+            return;
+        }
+
+        $ruangan = $this->ruanganModel->getRuanganById($id);
+        if (!$ruangan) {
+            $_SESSION['error'] = 'Ruangan tidak ditemukan';
+            $this->redirect('/ruangan');
+            return;
+        }
+
+        $data = [
+            'nama_ruangan' => $_POST['nama_ruangan'] ?? $_POST['nama_alat'] ?? '',
+            'kategori_id' => $_POST['kategori_id'] ?? '',
+            'status' => $_POST['status'] ?? 'TERSEDIA',
+            'deskripsi' => $_POST['deskripsi'] ?? '',
+            'kapasitas' => $_POST['kapasitas'] ?? $_POST['jumlah'] ?? 1,
+            'lantai' => $_POST['lantai'] ?? 1,
+            'gedung' => $_POST['gedung'] ?? ''
+        ];
+
+        if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../../public/upload/images/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $extension = strtolower(pathinfo($_FILES['gambar']['name'], PATHINFO_EXTENSION));
+            $fileName = 'ruangan_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . ($extension ? '.' . $extension : '');
+            $targetPath = $uploadDir . $fileName;
+
+            if (move_uploaded_file($_FILES['gambar']['tmp_name'], $targetPath)) {
+                $data['gambar'] = 'upload/images/' . $fileName;
+            }
+        }
+
+        $data['updated_at'] = date('Y-m-d H:i:s');
+
+        try {
+            $this->ruanganModel->update($id, $data);
+            $_SESSION['success'] = 'Ruangan berhasil diperbarui';
+        } catch (Exception $e) {
+            error_log("Update ruangan error: " . $e->getMessage());
+            $_SESSION['error'] = 'Gagal memperbarui ruangan: ' . $e->getMessage();
+        }
+
+        $this->redirect("/ruangan/$id/detail");
+    }
+
+    /**
+     * Delete ruangan
+     */
+    public function deleteRuangan($id)
+    {
+        $this->requireAdmin();
+
+        try {
+            $ruangan = $this->ruanganModel->getRuanganById($id);
+
+            $this->ruanganModel->softDelete($id);
+
+            if ($ruangan) {
+                $this->notifikasiModel->createNotification(
+                    'Ruangan Dihapus',
+                    "Ruangan '{$ruangan['nama_ruangan']}' telah dihapus",
+                    [$_SESSION['user_id']]
+                );
+            }
+
+            $_SESSION['success'] = 'Ruangan berhasil dihapus';
+        } catch (Exception $e) {
+            error_log("Delete ruangan error: " . $e->getMessage());
+            $_SESSION['error'] = 'Gagal menghapus ruangan: ' . $e->getMessage();
+        }
+
+        $this->redirect('/ruangan');
+    }
+
+    /**
+     * Change ruangan status
+     */
+    public function changeRuanganStatus($id, $status)
+    {
+        $this->requireAdmin();
+
+        try {
+            $this->ruanganModel->updateStatus($id, $status);
+            $_SESSION['success'] = 'Status ruangan berhasil diubah';
+        } catch (Exception $e) {
+            error_log("Change ruangan status error: " . $e->getMessage());
+            $_SESSION['error'] = 'Gagal mengubah status ruangan: ' . $e->getMessage();
+        }
+
+        $this->redirect("/ruangan/$id/detail");
+    }
+
+    /**
+     * Update ruangan status via AJAX
+     */
+    public function updateRuanganStatus($ruanganId)
+    {
+        header('Content-Type: application/json');
+
+        $this->requireAdmin();
+
+        try {
+            $input = json_decode(file_get_contents('php://input'), true);
+            $status = strtolower($input['status'] ?? '');
+
+            $validStatuses = ['tersedia', 'dipinjam', 'maintenance', 'rusak'];
+            if (!in_array($status, $validStatuses)) {
+                echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
+                exit;
+            }
+
+            if ($this->ruanganModel->updateStatus($ruanganId, $status)) {
+                $statusMessages = [
+                    'tersedia' => 'Status ruangan berhasil diubah menjadi Tersedia',
+                    'dipinjam' => 'Status ruangan berhasil diubah menjadi Dipinjam',
+                    'maintenance' => 'Status ruangan berhasil diubah menjadi Maintenance',
+                    'rusak' => 'Status ruangan berhasil diubah menjadi Rusak'
+                ];
+                echo json_encode(['success' => true, 'message' => $statusMessages[$status]]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Gagal memperbarui status ruangan']);
+            }
+        } catch (Exception $e) {
+            error_log("Update ruangan status error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+        exit;
+    }
 
     /**
      * Show new peminjaman page
@@ -1076,9 +1437,11 @@ class AdminController extends BaseController
 
         try {
             $alatList = $this->alatModel->getAvailableAlat();
+            $ruanganList = $this->ruanganModel->getRuanganForBooking();
         } catch (Exception $e) {
             error_log("Error fetching available alat: " . $e->getMessage());
             $alatList = [];
+            $ruanganList = [];
         }
 
         $data = [
@@ -1089,6 +1452,7 @@ class AdminController extends BaseController
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
             'alatList' => $alatList,
+            'ruanganList' => $ruanganList ?? [],
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -1151,31 +1515,58 @@ class AdminController extends BaseController
                     return;
                 }
 
+                // Determine item type and set appropriate ID
+                $jenisItem = $_POST['jenis_item'] ?? '';
+                $alatId = $_POST['alat_id'] ?? null;
+                $ruanganId = $_POST['ruangan_id'] ?? null;
+
                 $data = [
                     'user_id' => $userId,
                     'nama_peminjam' => $_POST['nama_peminjam'] ?? $_SESSION['user_name'] ?? 'User',
-                    'alat_id' => $_POST['alat_id'] ?? '',
+                    'alat_id' => !empty($alatId) ? $alatId : null,
+                    'ruangan_id' => !empty($ruanganId) ? $ruanganId : null,
                     'tanggal_pinjam' => $_POST['tanggal_pinjam'] ?? '',
                     'tanggal_kembali' => $_POST['tanggal_kembali'] ?? '',
-                    'keterangan' => $_POST['catatan'] ?? '', 
+                    'keterangan' => $_POST['catatan'] ?? '',
                     'status' => 'PENDING'
                 ];
 
                 $namaPeminjam = $data['nama_peminjam'];
 
-                if (empty($data['alat_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
-                    $_SESSION['error'] = 'Semua field wajib diisi';
+                // Determine item type for validation and notifications
+                $itemType = '';
+                $itemId = null;
+
+                if ($jenisItem === 'alat') {
+                    if (empty($data['alat_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
+                        $_SESSION['error'] = 'Semua field wajib diisi';
+                        $this->redirect('/peminjaman/new');
+                        return;
+                    }
+                    $itemType = 'Alat';
+                    $itemId = $data['alat_id'];
+                } elseif ($jenisItem === 'ruangan') {
+                    if (empty($data['ruangan_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
+                        $_SESSION['error'] = 'Semua field wajib diisi';
+                        $this->redirect('/peminjaman/new');
+                        return;
+                    }
+                    $itemType = 'Ruangan';
+                    $itemId = $data['ruangan_id'];
+                } else {
+                    $_SESSION['error'] = 'Jenis item tidak valid';
                     $this->redirect('/peminjaman/new');
                     return;
                 }
 
-                $peminjamanId = $this->peminjamanModel->create($data);
+                $peminjamanId = $this->peminjamanModel->createPeminjaman($data);
                 if ($peminjamanId) {
                     $peminjaman = $this->peminjamanModel->getPeminjamanDetails($peminjamanId);
                     if ($peminjaman) {
+                        $itemName = $peminjaman['nama_alat'] ?? $itemType;
                         $this->notifikasiModel->createNotification(
                             'Pengajuan Peminjaman Dikirim',
-                            "Pengajuan peminjaman {$peminjaman['nama_alat']} berhasil dikirim dan menunggu persetujuan",
+                            "Pengajuan peminjaman {$itemName} berhasil dikirim dan menunggu persetujuan",
                             [$userId],
                             $peminjamanId
                         );
@@ -1185,13 +1576,13 @@ class AdminController extends BaseController
                             $adminIds = array_column($adminUsers, 'id');
                             $this->notifikasiModel->createNotification(
                                 'Pengajuan Peminjaman Baru',
-                                "Peminjaman {$peminjaman['nama_alat']} oleh {$namaPeminjam} menunggu persetujuan",
+                                "Peminjaman {$itemName} oleh {$namaPeminjam} menunggu persetujuan",
                                 $adminIds,
-                                $peminjamanId  
+                                $peminjamanId
                             );
                         }
                     }
-                    $_SESSION['success'] = 'Pengajuan peminjaman berhasil dikirim';
+                    $_SESSION['success'] = "Pengajuan peminjaman {$itemType} berhasil dikirim";
                 } else {
                     $_SESSION['error'] = 'Gagal mengajukan peminjaman';
                 }
