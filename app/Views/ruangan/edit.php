@@ -1,6 +1,6 @@
 <?php
-$title = 'Edit Alat - LBMS';
-$current_route = '/alat';
+$title = 'Edit Ruangan - LBMS';
+$current_route = '/ruangan';
 require_once __DIR__ . '/../layouts/header.php';
 require_once __DIR__ . '/../layouts/sidebar.php';
 require_once __DIR__ . '/../layouts/navbar.php';
@@ -8,12 +8,12 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
 <main class="main-content" id="mainContent">
     <div class="d-flex align-items-center mb-4">
-        <a href="/alat/<?= $alatDetail['id'] ?? '' ?>/detail" class="btn btn-outline-secondary btn-sm rounded-pill me-3">
+        <a href="/ruangan/<?= $ruanganDetail['id'] ?? '' ?>/detail" class="btn btn-outline-secondary btn-sm rounded-pill me-3">
             <i class="bi bi-arrow-left me-1"></i> Kembali
         </a>
         <div>
-            <h1 class="page-title h3 fw-bold mb-0">Edit Alat</h1>
-            <p class="text-muted mb-0">Perbarui informasi alat laboratorium</p>
+            <h1 class="page-title h3 fw-bold mb-0">Edit Ruangan</h1>
+            <p class="text-muted mb-0">Perbarui informasi fasilitas ruangan</p>
         </div>
     </div>
 
@@ -27,27 +27,26 @@ require_once __DIR__ . '/../layouts/navbar.php';
 
     <div class="card border-0 shadow-sm overflow-hidden">
         <div class="card-header bg-white border-bottom p-4">
-            <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Formulir Pengubahan Data</h5>
+            <h5 class="fw-bold mb-0"><i class="bi bi-door-open me-2 text-primary"></i>Data Ruangan</h5>
         </div>
         <div class="card-body p-4">
-            <form method="POST" action="/alat/<?= $alatDetail['id'] ?? '' ?>/update" id="editAlatForm" enctype="multipart/form-data">
+            <form method="POST" action="/ruangan/<?= $ruanganDetail['id'] ?? '' ?>/update" id="editRuanganForm" enctype="multipart/form-data">
                 <div class="row g-4">
                     <div class="col-lg-7">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="kode_alat" class="form-label small fw-semibold">Kode Alat</label>
+                                <label for="kode_ruangan" class="form-label small fw-semibold">Kode Ruangan</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-hash"></i></span>
-                                    <input type="text" class="form-control border-start-0 ps-0 bg-light" id="kode_alat" 
-                                           value="<?= htmlspecialchars($alatDetail['kode_alat'] ?? '') ?>" readonly style="cursor: not-allowed;">
+                                    <input type="text" class="form-control border-start-0 ps-0 bg-light" id="kode_ruangan" 
+                                           value="<?= htmlspecialchars($ruanganDetail['kode_ruangan'] ?? '') ?>" readonly style="cursor: not-allowed;">
                                 </div>
-                                <div class="form-text smaller"><i class="bi bi-lock-fill me-1"></i>Kode alat bersifat permanen.</div>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="nama_alat" class="form-label small fw-semibold">Nama Alat</label>
-                                <input type="text" class="form-control" id="nama_alat" name="nama_alat" 
-                                       value="<?= htmlspecialchars($alatDetail['nama_alat'] ?? '') ?>" placeholder="Contoh: Mikroskop Binokuler" required>
+                                <label for="nama_ruangan" class="form-label small fw-semibold">Nama Ruangan</label>
+                                <input type="text" class="form-control" id="nama_ruangan" name="nama_ruangan" 
+                                       value="<?= htmlspecialchars($ruanganDetail['nama_ruangan'] ?? '') ?>" required>
                             </div>
 
                             <div class="col-md-6">
@@ -56,7 +55,7 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                     <option value="">Pilih Kategori</option>
                                     <?php if (!empty($kategoriList)): ?>
                                         <?php foreach ($kategoriList as $kategori): ?>
-                                            <option value="<?= $kategori['id'] ?>" <?= ($alatDetail['kategori_id'] ?? '') == $kategori['id'] ? 'selected' : '' ?>>
+                                            <option value="<?= $kategori['id'] ?>" <?= ($ruanganDetail['kategori_id'] ?? '') == $kategori['id'] ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($kategori['name']) ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -65,36 +64,51 @@ require_once __DIR__ . '/../layouts/navbar.php';
                             </div>
 
                             <div class="col-md-6">
-                                <label for="tahun_pembelian" class="form-label small fw-semibold">Tahun Pembelian</label>
-                                <input type="number" class="form-control" id="tahun_pembelian" name="tahun_pembelian" 
-                                       min="1900" max="<?= date('Y') ?>" value="<?= htmlspecialchars($alatDetail['tahun_pembelian'] ?? '') ?>" required>
+                                <label for="kapasitas" class="form-label small fw-semibold">Kapasitas (Orang)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="kapasitas" name="kapasitas" 
+                                           min="1" value="<?= htmlspecialchars($ruanganDetail['kapasitas'] ?? '1') ?>" required>
+                                    <span class="input-group-text bg-light text-muted small">Pax</span>
+                                </div>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="status" class="form-label small fw-semibold">Status Saat Ini</label>
+                                <label for="status" class="form-label small fw-semibold">Status Ruangan</label>
                                 <select class="form-select select2-enable" id="status" name="status" required>
-                                    <option value="tersedia" <?= strtolower($alatDetail['status'] ?? '') === 'tersedia' ? 'selected' : '' ?>>Tersedia</option>
-                                    <option value="dipinjam" <?= strtolower($alatDetail['status'] ?? '') === 'dipinjam' ? 'selected' : '' ?>>Dipinjam</option>
-                                    <option value="maintenance" <?= strtolower($alatDetail['status'] ?? '') === 'maintenance' ? 'selected' : '' ?>>Maintenance</option>
-                                    <option value="rusak" <?= strtolower($alatDetail['status'] ?? '') === 'rusak' ? 'selected' : '' ?>>Rusak</option>
+                                    <option value="TERSEDIA" <?= strtoupper($ruanganDetail['status'] ?? '') === 'TERSEDIA' ? 'selected' : '' ?>>Tersedia</option>
+                                    <option value="DIPINJAM" <?= strtoupper($ruanganDetail['status'] ?? '') === 'DIPINJAM' ? 'selected' : '' ?>>Dipinjam</option>
+                                    <option value="MAINTENANCE" <?= strtoupper($ruanganDetail['status'] ?? '') === 'MAINTENANCE' ? 'selected' : '' ?>>Maintenance</option>
+                                    <option value="RUSAK" <?= strtoupper($ruanganDetail['status'] ?? '') === 'RUSAK' ? 'selected' : '' ?>>Rusak</option>
                                 </select>
                             </div>
 
+                            <div class="col-md-6">
+                                <label for="lantai" class="form-label small fw-semibold">Lantai</label>
+                                <input type="text" class="form-control" id="lantai" name="lantai" 
+                                       placeholder="Contoh: 2" value="<?= htmlspecialchars($ruanganDetail['lantai'] ?? '') ?>">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="gedung" class="form-label small fw-semibold">Gedung</label>
+                                <input type="text" class="form-control" id="gedung" name="gedung" 
+                                       placeholder="Contoh: Gedung A" value="<?= htmlspecialchars($ruanganDetail['gedung'] ?? '') ?>">
+                            </div>
+
                             <div class="col-12">
-                                <label for="deskripsi" class="form-label small fw-semibold">Deskripsi / Catatan Tambahan</label>
+                                <label for="deskripsi" class="form-label small fw-semibold">Deskripsi / Fasilitas</label>
                                 <textarea class="form-control" id="deskripsi" name="deskripsi" rows="4" 
-                                          placeholder="Masukkan detail spesifikasi atau kondisi alat..."><?= htmlspecialchars($alatDetail['deskripsi'] ?? '') ?></textarea>
+                                          placeholder="Tuliskan fasilitas yang tersedia di ruangan ini..."><?= htmlspecialchars($ruanganDetail['deskripsi'] ?? '') ?></textarea>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-lg-5">
                         <div class="bg-light rounded-4 p-4 h-100">
-                            <h6 class="fw-bold mb-3">Media & Foto</h6>
+                            <h6 class="fw-bold mb-3">Foto Ruangan</h6>
                             <div class="mb-4 text-center">
                                 <div class="mb-3">
-                                    <?php if ($alatDetail['gambar'] ?? null): ?>
-                                        <img src="/<?= htmlspecialchars($alatDetail['gambar']) ?>" id="imgPreview" 
+                                    <?php if (!empty($ruanganDetail['gambar'])): ?>
+                                        <img src="/<?= ltrim(htmlspecialchars($ruanganDetail['gambar']), '/') ?>" id="imgPreview" 
                                              class="img-fluid rounded-3 shadow-sm border" style="max-height: 250px; object-fit: cover;" alt="Current photo">
                                     <?php else: ?>
                                         <div id="noImage" class="bg-white rounded-3 d-flex align-items-center justify-content-center border border-dashed" style="height: 200px;">
@@ -107,22 +121,21 @@ require_once __DIR__ . '/../layouts/navbar.php';
                                     <?php endif; ?>
                                 </div>
                                 <label for="gambar" class="btn btn-outline-primary btn-sm rounded-pill px-4">
-                                    <i class="bi bi-camera me-2"></i><?= ($alatDetail['gambar'] ?? null) ? 'Ganti Foto' : 'Unggah Foto' ?>
+                                    <i class="bi bi-camera me-2"></i><?= (!empty($ruanganDetail['gambar'])) ? 'Ganti Foto' : 'Unggah Foto' ?>
                                     <input type="file" class="d-none" id="gambar" name="gambar" accept="image/*">
                                 </label>
-                                <div class="form-text smaller mt-2 text-muted">Format: JPG, PNG, GIF (Maks. 2MB)</div>
                             </div>
 
-                            <div class="alert alert-info border-0 shadow-sm smaller mb-0">
-                                <i class="bi bi-info-circle-fill me-2"></i>
-                                Pastikan data yang diubah telah divalidasi dengan benar sebelum menekan tombol simpan.
+                            <div class="alert alert-warning border-0 shadow-sm smaller mb-0">
+                                <i class="bi bi-lightbulb-fill me-2"></i>
+                                Deskripsi ruangan yang jelas membantu peminjam memahami fasilitas yang tersedia.
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="mt-5 pt-4 border-top d-flex justify-content-end">
-                    <a href="/alat/<?= $alatDetail['id'] ?? '' ?>/detail" class="btn btn-light rounded-pill px-4 me-2">Batal</a>
+                    <a href="/ruangan/<?= $ruanganDetail['id'] ?? '' ?>/detail" class="btn btn-light rounded-pill px-4 me-2">Batal</a>
                     <button type="submit" class="btn btn-primary rounded-pill px-5">
                         <i class="bi bi-check-circle me-2"></i>Simpan Perubahan
                     </button>
@@ -153,17 +166,6 @@ ob_start();
                 }
                 reader.readAsDataURL(file);
             }
-        });
-
-        $('#editAlatForm').on('submit', function(e) {
-            const tahun = parseInt($('#tahun_pembelian').val());
-            const currentYear = new Date().getFullYear();
-            if (tahun > currentYear) {
-                e.preventDefault();
-                alert('Tahun pembelian tidak bisa melebihi tahun saat ini.');
-                return false;
-            }
-            return true;
         });
     });
 </script>

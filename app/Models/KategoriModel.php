@@ -1,18 +1,16 @@
 <?php
 
 /**
- * Kategori Alat Model
+ * Model untuk mengelola data kategori alat dan ruangan
  */
-class KategoriAlatModel extends BaseModel
+class KategoriModel extends BaseModel
 {
-    protected $table = 'kategori_alat';
+    protected $table = 'kategori';
     protected $fillable = [
         'name'
     ];
 
-    /**
-     * Get all kategori alat
-     */
+    /** Ambil semua kategori */
     public function getAllKategori()
     {
         $sql = "SELECT * FROM {$this->table}
@@ -22,9 +20,7 @@ class KategoriAlatModel extends BaseModel
         return $this->db->fetchAll($sql);
     }
 
-    /**
-     * Get kategori by ID
-     */
+    /** Ambil kategori berdasarkan ID */
     public function getKategoriById($id)
     {
         $sql = "SELECT * FROM {$this->table}
@@ -33,36 +29,28 @@ class KategoriAlatModel extends BaseModel
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Create new kategori
-     */
+    /** Tambah kategori baru */
     public function createKategori($data)
     {
         $data['created_at'] = date('Y-m-d H:i:s');
         return $this->create($data);
     }
 
-    /**
-     * Update kategori
-     */
+    /** Update kategori */
     public function updateKategori($id, $data)
     {
         $data['updated_at'] = date('Y-m-d H:i:s');
         return $this->update($id, $data);
     }
 
-    /**
-     * Soft delete kategori
-     */
+    /** Hapus kategori (soft delete) */
     public function deleteKategori($id)
     {
         $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
-    /**
-     * Get kategori with alat count
-     */
+    /** Ambil kategori beserta jumlah alat di masing-masing */
     public function getKategoriWithAlatCount()
     {
         $sql = "SELECT k.*, COUNT(a.id) as jumlah_alat

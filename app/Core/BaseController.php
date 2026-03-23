@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Base Controller Class
+ * Kelas dasar untuk semua Controller
+ * Menyediakan fungsi umum seperti render view, redirect, validasi, dll
  */
 class BaseController
 {
@@ -12,9 +13,7 @@ class BaseController
         $this->router = new Router();
     }
 
-    /**
-     * Render a view with data
-     */
+    /** Tampilkan halaman view beserta datanya */
     protected function view($view, $data = [])
     {
         $data['app_name'] = Config::APP_NAME;
@@ -24,9 +23,7 @@ class BaseController
         $this->router->renderView($view, $data);
     }
 
-    /**
-     * Return JSON response
-     */
+    /** Kirim response dalam format JSON */
     protected function json($data, $statusCode = 200)
     {
         header('Content-Type: application/json');
@@ -35,17 +32,13 @@ class BaseController
         exit;
     }
 
-    /**
-     * Redirect to another URL
-     */
+    /** Arahkan pengguna ke URL lain */
     protected function redirect($url, $statusCode = 302)
     {
         $this->router->redirect($url, $statusCode);
     }
 
-    /**
-     * Get POST data
-     */
+    /** Ambil data dari form POST */
     protected function post($key = null, $default = null)
     {
         if ($key === null) {
@@ -54,9 +47,7 @@ class BaseController
         return $_POST[$key] ?? $default;
     }
 
-    /**
-     * Get GET data
-     */
+    /** Ambil data dari parameter URL (GET) */
     protected function get($key = null, $default = null)
     {
         if ($key === null) {
@@ -65,9 +56,7 @@ class BaseController
         return $_GET[$key] ?? $default;
     }
 
-    /**
-     * Get request input (POST or GET)
-     */
+    /** Ambil data dari POST atau GET */
     protected function input($key = null, $default = null)
     {
         $post = $this->post();
@@ -80,9 +69,7 @@ class BaseController
         return $post[$key] ?? $get[$key] ?? $default;
     }
 
-    /**
-     * Validate required fields
-     */
+    /** Validasi field yang wajib diisi */
     protected function validate($fields, $data = null)
     {
         $data = $data ?? $this->input();
@@ -119,42 +106,32 @@ class BaseController
         return $errors;
     }
 
-    /**
-     * Check if request is AJAX
-     */
+    /** Cek apakah request ini AJAX */
     protected function isAjax()
     {
         return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
-    /**
-     * Check if request is POST
-     */
+    /** Cek apakah request ini POST */
     protected function isPost()
     {
         return $_SERVER['REQUEST_METHOD'] === 'POST';
     }
 
-    /**
-     * Check if request is GET
-     */
+    /** Cek apakah request ini GET */
     protected function isGet()
     {
         return $_SERVER['REQUEST_METHOD'] === 'GET';
     }
 
-    /**
-     * Set flash message
-     */
+    /** Simpan pesan flash ke session (muncul sekali lalu hilang) */
     protected function setFlash($type, $message)
     {
         $_SESSION['flash'][$type] = $message;
     }
 
-    /**
-     * Get flash messages
-     */
+    /** Ambil pesan flash dari session */
     protected function getFlash()
     {
         $flash = $_SESSION['flash'] ?? [];
@@ -162,17 +139,13 @@ class BaseController
         return $flash;
     }
 
-    /**
-     * Get route parameters
-     */
+    /** Ambil parameter dari route URL */
     protected function getParams()
     {
         return $this->router->getParams();
     }
 
-    /**
-     * Get current user (implement based on your auth system)
-     */
+    /** Ambil data user yang sedang login */
     protected function getCurrentUser()
     {
         if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
@@ -186,18 +159,14 @@ class BaseController
         return null;
     }
 
-    /**
-     * Check if user is logged in
-     */
+    /** Cek apakah user sudah login */
     protected function isLoggedIn()
     {
         return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true &&
                !empty($_SESSION['user_id']) && !empty($_SESSION['user_email']);
     }
 
-    /**
-     * Require authentication
-     */
+    /** Paksa user harus login, kalau belum langsung redirect */
     protected function requireAuth()
     {
         if (!$this->isLoggedIn()) {
@@ -205,9 +174,7 @@ class BaseController
         }
     }
 
-    /**
-     * Require admin role
-     */
+    /** Paksa hanya admin yang boleh akses */
     protected function requireAdmin()
     {
         if (!$this->isLoggedIn() || ($_SESSION['user_role'] ?? '') !== 'ADMIN') {
@@ -217,9 +184,7 @@ class BaseController
         }
     }
 
-    /**
-     * Get current user data for views
-     */
+    /** Ambil data user untuk ditampilkan di view */
     protected function getUser()
     {
         if ($this->isLoggedIn()) {

@@ -1,318 +1,175 @@
-<!DOCTYPE html>
-<html lang="id">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tambah User Baru - LBMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
-</head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <img src="/images/logo.webp" alt="LBMS Logo">
-            </div>
+<?php
+$title = 'Tambah User Baru - LBMS';
+$current_route = '/users';
+require_once __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../layouts/sidebar.php';
+require_once __DIR__ . '/../layouts/navbar.php';
+?>
+
+<main class="main-content" id="mainContent">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/users" class="btn btn-outline-secondary btn-sm rounded-pill me-3">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+        <div>
+            <h1 class="page-title h3 fw-bold mb-0">Tambah User Baru</h1>
+            <p class="text-muted mb-0">Daftarkan pengguna baru ke dalam sistem</p>
         </div>
+    </div>
 
-        <nav class="sidebar-menu">
-            <a href="/dashboard" class="sidebar-menu-item">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-            <a href="/users" class="sidebar-menu-item active">
-                <i class="bi bi-people"></i>
-                Data User
-            </a>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/alat" class="sidebar-menu-item">
-                    <i class="bi bi-wrench"></i>
-                    Manajemen Alat
-                </a>
-            <?php endif; ?>
-            <a href="/settings" class="sidebar-menu-item">
-                <i class="bi bi-gear"></i>
-                Settings
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <a href="/logout" class="sidebar-menu-item logout-item">
-                <i class="bi bi-box-arrow-right"></i>
-                Logout
-            </a>
+    <?php if (isset($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <?= htmlspecialchars($error) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </aside>
+    <?php endif; ?>
 
-    <!-- Top Navbar -->
-    <nav class="top-navbar" id="topNavbar">
-        <div class="d-flex align-items-center">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <!-- Global Search -->
-            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
-                <select id="globalSearch" class="form-select" style="width: 100%;">
-                    <option value="">Cari</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="navbar-right">
-            <div class="d-flex align-items-center">
-                <!-- Notification Icon -->
-                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
-                    <i class="bi bi-bell"></i>
-                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= $unreadNotificationCount ?>
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    <?php endif; ?>
-                </a>
-
-                <!-- User Profile -->
-                <div class="user-profile">
-                    <div class="user-info text-end">
-                        <div class="user-name"><?= htmlspecialchars($user['name'] ?? 'Admin User') ?></div>
-                        <div class="user-role"><?= htmlspecialchars($user['role'] ?? 'ADMIN') ?></div>
-                    </div>
-                    <div class="user-avatar ms-2">
-                        <?= substr($user['name'] ?? 'Admin User', 0, 1) ?>
-                    </div>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-white border-bottom p-4">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-person-plus me-2 text-primary"></i>Data Pengguna Baru</h5>
                 </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <div class="d-flex align-items-center mb-4">
-            <a href="/users" class="btn btn-outline-secondary me-3">
-                <i class="bi bi-arrow-left me-2"></i>Kembali
-            </a>
-            <h1 class="mb-0">Tambah User Baru</h1>
-        </div>
-
-        <?php if (isset($error)): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <?= htmlspecialchars($error) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <?= htmlspecialchars($success) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-person-plus me-2"></i>Form User Baru
-                </h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/users/create" id="tambahUserForm">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-primary mb-3">
-                                <i class="bi bi-person me-1"></i>Informasi Pribadi
-                            </h6>
-
-                            <!-- <div class="mb-3">
-                                <label for="nik" class="form-label">NIK</label>
-                                <input type="text" class="form-control" id="nik" name="nik" placeholder="Masukkan NIK" required>
-                                <small class="form-text text-muted">Nomor Induk Kependudukan</small>
-                            </div> -->
-
-                            <div class="mb-3">
-                                <label for="name" class="form-label">Nama Lengkap</label>
-                                <input type="text" class="form-control" id="name" name="name" placeholder="Masukkan nama lengkap" required>
+                <div class="card-body p-4">
+                    <form method="POST" action="/users/create" id="tambahUserForm">
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label for="name" class="form-label small fw-semibold">Nama Lengkap</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control border-start-0 ps-0" id="name" name="name" 
+                                           placeholder="Masukkan nama lengkap" required>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" placeholder="user@example.com" required>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label small fw-semibold">Alamat Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control border-start-0 ps-0" id="email" name="email" 
+                                           placeholder="nama@email.com" required>
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="col-md-6">
-                            <h6 class="text-primary mb-3">
-                                <i class="bi bi-shield-lock me-1"></i>Keamanan Akun
-                            </h6>
-
-                            <div class="mb-3">
-                                <label for="role" class="form-label">Role</label>
-                                <select class="form-control" id="role" name="role" required>
+                            <div class="col-md-6">
+                                <label for="role" class="form-label small fw-semibold">Role / Hak Akses</label>
+                                <select class="form-select select2-enable" id="role" name="role" required>
                                     <option value="">Pilih Role</option>
                                     <option value="USER">User</option>
                                     <option value="ADMIN">Admin</option>
                                 </select>
-                                <small class="form-text text-muted">Pilih akses level untuk user</small>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
+                            <div class="col-md-6">
+                                <label for="password" class="form-label small fw-semibold">Password</label>
                                 <div class="input-group">
-                                    <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan password" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-lock"></i></span>
+                                    <input type="password" class="form-control border-start-0 border-end-0 ps-0" id="password" name="password" 
+                                           placeholder="Masukkan password" required>
+                                    <button class="btn btn-light border border-start-0" type="button" id="togglePassword">
                                         <i class="bi bi-eye" id="passwordIcon"></i>
                                     </button>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="confirmPassword" class="form-label">Konfirmasi Password</label>
+                            <div class="col-md-6">
+                                <label for="confirmPassword" class="form-label small fw-semibold">Konfirmasi Password</label>
                                 <div class="input-group">
-                                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Ulangi password" required>
-                                    <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-shield-check"></i></span>
+                                    <input type="password" class="form-control border-start-0 border-end-0 ps-0" id="confirmPassword" name="confirmPassword" 
+                                           placeholder="Ulangi password" required>
+                                    <button class="btn btn-light border border-start-0" type="button" id="toggleConfirmPassword">
                                         <i class="bi bi-eye" id="confirmPasswordIcon"></i>
                                     </button>
                                 </div>
                             </div>
-
-                                                    </div>
-                    </div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="d-flex justify-content-end">
-                                <a href="/users" class="btn btn-secondary me-2">
-                                    <i class="bi bi-x-circle me-2"></i>Batal
-                                </a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-circle me-2"></i>Simpan User
-                                </button>
-                            </div>
                         </div>
-                    </div>
-                </form>
+
+                        <div class="mt-5 pt-4 border-top d-flex justify-content-end">
+                            <a href="/users" class="btn btn-light rounded-pill px-4 me-2">Batal</a>
+                            <button type="submit" class="btn btn-primary rounded-pill px-5">
+                                <i class="bi bi-check-circle me-2"></i>Simpan User
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            function toggleSidebar() {
-                $('#sidebar').toggleClass('collapsed');
-                $('#topNavbar').toggleClass('sidebar-collapsed');
-                $('#mainContent').toggleClass('sidebar-collapsed');
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-primary"></i>Panduan Pengisian</h6>
+                    <ul class="small text-muted ps-3 mb-0">
+                        <li class="mb-2">Gunakan alamat email aktif sebagai identitas login unik.</li>
+                        <li class="mb-2">Password sebaiknya terdiri dari minimal 8 karakter dengan kombinasi huruf dan angka.</li>
+                        <li class="mb-2"><b>Admin:</b> Memiliki akses ke manajemen inventaris dan pengguna.</li>
+                        <li><b>User:</b> Memiliki akses terbatas untuk peminjaman alat.</li>
+                    </ul>
+                </div>
+            </div>
 
-                const isCollapsed = $('#sidebar').hasClass('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
-            }
+            <div class="alert alert-warning border-0 shadow-sm small p-4">
+                <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>
+                Pastikan data yang dimasukkan sudah benar. Password tidak akan ditampilkan kembali setelah disimpan demi keamanan.
+            </div>
+        </div>
+    </div>
+</main>
 
-            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (sidebarCollapsed) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
+<?php 
+ob_start(); 
+?>
+<script>
+    $(document).ready(function() {
+        $('#togglePassword').on('click', function() {
+            const passwordField = $('#password');
+            const passwordIcon = $('#passwordIcon');
 
-            $('#sidebarToggle').on('click', function(e) {
-                e.stopPropagation();
-                toggleSidebar();
-            });
-
-            $('#togglePassword').on('click', function() {
-                const passwordField = $('#password');
-                const passwordIcon = $('#passwordIcon');
-
-                if (passwordField.attr('type') === 'password') {
-                    passwordField.attr('type', 'text');
-                    passwordIcon.removeClass('bi-eye').addClass('bi-eye-slash');
-                } else {
-                    passwordField.attr('type', 'password');
-                    passwordIcon.removeClass('bi-eye-slash').addClass('bi-eye');
-                }
-            });
-
-            $('#toggleConfirmPassword').on('click', function() {
-                const confirmPasswordField = $('#confirmPassword');
-                const confirmPasswordIcon = $('#confirmPasswordIcon');
-
-                if (confirmPasswordField.attr('type') === 'password') {
-                    confirmPasswordField.attr('type', 'text');
-                    confirmPasswordIcon.removeClass('bi-eye').addClass('bi-eye-slash');
-                } else {
-                    confirmPasswordField.attr('type', 'password');
-                    confirmPasswordIcon.removeClass('bi-eye-slash').addClass('bi-eye');
-                }
-            });
-
-            $('#tambahUserForm').on('submit', function(e) {
-                const password = $('#password').val();
-                const confirmPassword = $('#confirmPassword').val();
-
-                if (password !== confirmPassword) {
-                    e.preventDefault();
-                    alert('Password dan konfirmasi password tidak cocok!');
-                    return false;
-                }
-
-                return true;
-            });
-
-            if ($(window).width() <= 768) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
+            if (passwordField.attr('type') === 'password') {
+                passwordField.attr('type', 'text');
+                passwordIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                passwordField.attr('type', 'password');
+                passwordIcon.removeClass('bi-eye-slash').addClass('bi-eye');
             }
         });
-    </script>
 
-    <script>
-        $(document).ready(function() {
-            const $search = $('#globalSearch');
-            if (!$search.length || !$.fn.select2) {
-                return;
+        $('#toggleConfirmPassword').on('click', function() {
+            const confirmPasswordField = $('#confirmPassword');
+            const confirmPasswordIcon = $('#confirmPasswordIcon');
+
+            if (confirmPasswordField.attr('type') === 'password') {
+                confirmPasswordField.attr('type', 'text');
+                confirmPasswordIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+            } else {
+                confirmPasswordField.attr('type', 'password');
+                confirmPasswordIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+            }
+        });
+
+        $('#tambahUserForm').on('submit', function(e) {
+            const password = $('#password').val();
+            const confirmPassword = $('#confirmPassword').val();
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                alert('Password dan konfirmasi password tidak cocok!');
+                return false;
             }
 
-            const searchItems = [
-                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
-                { id: 'users', text: 'Users', url: '/users' },
-                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
-                { id: 'alat', text: 'Alat', url: '/alat' },
-                { id: 'profile', text: 'Profile', url: '/settings/profile' },
-{ id: 'notifications', text: 'Notifications', url: '/notifications' },
-            ];
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('Password minimal 6 karakter!');
+                return false;
+            }
 
-            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
-            const filteredSearchItems = searchItems.filter(item => {
-                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
-                    return false;
-                }
-                return true;
-            });
-
-            $search.select2({
-                theme: 'bootstrap-5',
-                width: '100%',
-                placeholder: 'Cari',
-                allowClear: true,
-                data: filteredSearchItems
-            });
-
-            $search.on('select2:select', function(e) {
-                const url = e.params.data && e.params.data.url;
-                if (url) {
-                    window.location.href = url;
-                }
-            });
+            return true;
         });
-    </script>
-
-</body>
-</html>
+    });
+</script>
+<?php 
+$extra_js = ob_get_clean();
+require_once __DIR__ . '/../layouts/footer.php'; 
+?>

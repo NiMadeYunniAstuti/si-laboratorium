@@ -16,17 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at TIMESTAMP NULL
 );
 
--- Tabel Kategori Alat
-CREATE TABLE IF NOT EXISTS kategori_alat (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
-);
-
--- Tabel Tipe Alat
-CREATE TABLE IF NOT EXISTS tipe_alat (
+-- Tabel Kategori
+CREATE TABLE IF NOT EXISTS kategori (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -40,7 +31,6 @@ CREATE TABLE IF NOT EXISTS alat (
     kode_alat VARCHAR(50) NOT NULL UNIQUE,
     nama_alat VARCHAR(255) NOT NULL,
     kategori_id INT,
-    tipe_id INT,
     tahun_pembelian INT,
     jumlah INT DEFAULT 1,
     kondisi ENUM('BAIK', 'RUSAK', 'HILANG') DEFAULT 'BAIK',
@@ -50,8 +40,25 @@ CREATE TABLE IF NOT EXISTS alat (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
-    FOREIGN KEY (kategori_id) REFERENCES kategori_alat(id) ON DELETE SET NULL,
-    FOREIGN KEY (tipe_id) REFERENCES tipe_alat(id) ON DELETE SET NULL
+    FOREIGN KEY (kategori_id) REFERENCES kategori(id) ON DELETE SET NULL
+);
+
+-- Tabel Ruangan (ruangan untuk peminjaman)
+CREATE TABLE IF NOT EXISTS ruangan (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_ruangan VARCHAR(50) NOT NULL UNIQUE,
+    nama_ruangan VARCHAR(255) NOT NULL,
+    kategori_id INT,
+    kapasitas INT,
+    lantai INT,
+    gedung VARCHAR(100),
+    gambar VARCHAR(255),
+    deskripsi TEXT,
+    status ENUM('TERSEDIA', 'DIPINJAM', 'MAINTENANCE', 'RUSAK') DEFAULT 'TERSEDIA',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (kategori_id) REFERENCES kategori(id) ON DELETE SET NULL
 );
 
 -- Tabel Peminjaman (manajemen peminjaman)
@@ -59,7 +66,8 @@ CREATE TABLE IF NOT EXISTS peminjaman (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     nama_peminjam VARCHAR(100) NOT NULL,
-    alat_id INT NOT NULL,
+    item_type ENUM('alat', 'ruangan') NOT NULL DEFAULT 'alat',
+    item_id INT NOT NULL,
     tanggal_pinjam DATE NOT NULL,
     tanggal_kembali DATE NOT NULL,
     tanggal_pengembalian DATE NULL,
@@ -68,8 +76,7 @@ CREATE TABLE IF NOT EXISTS peminjaman (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT,
-    FOREIGN KEY (alat_id) REFERENCES alat(id) ON DELETE RESTRICT
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 );
 
 -- Tabel Notifikasi
@@ -101,34 +108,35 @@ CREATE TABLE IF NOT EXISTS notifikasi_users (
 INSERT IGNORE INTO users (name, email, password_hash, role, status) VALUES
 ('Administrator', 'admin@lbms.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN', 'ACTIVE');
 
--- Kategori alat default
-INSERT IGNORE INTO kategori_alat (name) VALUES
+-- Kategori default
+INSERT IGNORE INTO kategori (name) VALUES
 ('ALAT_TEKNIK_ELEKTRO'),
 ('ALAT_TEKNIK_SIPIL'),
 ('ALAT_TEKNOLOGI_INFORMASI'),
-('ALAT_TEKNIK_LINGKUNGAN');
-
--- Tipe alat default
-INSERT IGNORE INTO tipe_alat (name) VALUES
-('ALAT'),
-('RUANGAN');
+('ALAT_TEKNIK_LINGKUNGAN'),
+('RUANGAN_KELAS'),
+('LAB_KOMPUTER'),
+('RUANG_RAPAT'),
+('PERPUSTAKAAN');
 
 -- Index untuk performa
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_status ON users(status);
 
-CREATE INDEX IF NOT EXISTS idx_alat_kode ON alat(kode_alat);
-CREATE INDEX IF NOT EXISTS idx_alat_kategori ON alat(kategori_id);
-CREATE INDEX IF NOT EXISTS idx_alat_tipe ON alat(tipe_id);
-CREATE INDEX IF NOT EXISTS idx_alat_status ON alat(status);
+CREATE INDEX idx_alat_kode ON alat(kode_alat);
+CREATE INDEX idx_alat_kategori ON alat(kategori_id);
+CREATE INDEX idx_alat_status ON alat(status);
 
-CREATE INDEX IF NOT EXISTS idx_peminjaman_user ON peminjaman(user_id);
-CREATE INDEX IF NOT EXISTS idx_peminjaman_alat ON peminjaman(alat_id);
-CREATE INDEX IF NOT EXISTS idx_peminjaman_status ON peminjaman(status);
-CREATE INDEX IF NOT EXISTS idx_peminjaman_tanggal ON peminjaman(tanggal_pinjam);
+CREATE INDEX idx_ruangan_kode ON ruangan(kode_ruangan);
+CREATE INDEX idx_ruangan_kategori ON ruangan(kategori_id);
+CREATE INDEX idx_ruangan_status ON ruangan(status);
+CREATE INDEX idx_peminjaman_user ON peminjaman(user_id);
+CREATE INDEX idx_peminjaman_item ON peminjaman(item_type, item_id);
+CREATE INDEX idx_peminjaman_status ON peminjaman(status);
+CREATE INDEX idx_peminjaman_tanggal ON peminjaman(tanggal_pinjam);
 
-CREATE INDEX IF NOT EXISTS idx_notifikasi_read ON notifikasi(is_read);
-CREATE INDEX IF NOT EXISTS idx_notif_users_notif ON notifikasi_users(notifikasi_id);
-CREATE INDEX IF NOT EXISTS idx_notif_users_user ON notifikasi_users(user_id);
-CREATE INDEX IF NOT EXISTS idx_notif_users_read ON notifikasi_users(is_read);
+CREATE INDEX idx_notifikasi_read ON notifikasi(is_read);
+CREATE INDEX idx_notif_users_notif ON notifikasi_users(notifikasi_id);
+CREATE INDEX idx_notif_users_user ON notifikasi_users(user_id);
+CREATE INDEX idx_notif_users_read ON notifikasi_users(is_read);

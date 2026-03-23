@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Base Model Class
+ * Kelas dasar untuk semua Model
+ * Menyediakan fungsi CRUD standar yang bisa dipakai di model turunannya
  */
 class BaseModel
 {
@@ -16,36 +17,28 @@ class BaseModel
         $this->db = Database::getInstance();
     }
 
-    /**
-     * Find record by ID
-     */
+    /** Cari data berdasarkan ID */
     public function find($id)
     {
         $sql = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1";
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Find record by column
-     */
+    /** Cari data berdasarkan kolom tertentu */
     public function findBy($column, $value)
     {
         $sql = "SELECT * FROM {$this->table} WHERE {$column} = :value LIMIT 1";
         return $this->db->fetch($sql, ['value' => $value]);
     }
 
-    /**
-     * Get all records
-     */
+    /** Ambil semua data dari tabel */
     public function all()
     {
         $sql = "SELECT * FROM {$this->table}";
         return $this->db->fetchAll($sql);
     }
 
-    /**
-     * Get records with conditions
-     */
+    /** Ambil data dengan kondisi tertentu */
     public function where($column, $operator = '=', $value = null)
     {
         if ($value === null) {
@@ -57,9 +50,7 @@ class BaseModel
         return $this->db->fetchAll($sql, ['value' => $value]);
     }
 
-    /**
-     * Create new record
-     */
+    /** Tambah data baru ke tabel */
     public function create($data)
     {
         $data = $this->filterFillable($data);
@@ -79,9 +70,7 @@ class BaseModel
         return $this->db->lastInsertId();
     }
 
-    /**
-     * Update record
-     */
+    /** Update data berdasarkan ID */
     public function update($id, $data)
     {
         $data = $this->filterFillable($data);
@@ -103,9 +92,7 @@ class BaseModel
         return $stmt !== false;
     }
 
-    /**
-     * Delete record
-     */
+    /** Hapus data permanen berdasarkan ID */
     public function delete($id)
     {
         $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = :id";
@@ -113,9 +100,7 @@ class BaseModel
         return $stmt !== false;
     }
 
-    /**
-     * Get paginated results
-     */
+    /** Ambil data dengan pagination (per halaman) */
     public function paginate($page = 1, $limit = null, $conditions = [])
     {
         $limit = $limit ?? Config::ITEMS_PER_PAGE;
@@ -156,17 +141,13 @@ class BaseModel
         ];
     }
 
-    /**
-     * Execute raw query
-     */
+    /** Jalankan query SQL mentah */
     public function raw($sql, $params = [])
     {
         return $this->db->fetchAll($sql, $params);
     }
 
-    /**
-     * Count records
-     */
+    /** Hitung jumlah data dengan kondisi tertentu */
     public function count($conditions = [])
     {
         $whereClause = '';
@@ -186,36 +167,28 @@ class BaseModel
         return $result['total'] ?? 0;
     }
 
-    /**
-     * Check if record exists
-     */
+    /** Cek apakah data dengan ID tertentu ada */
     public function exists($id)
     {
         $record = $this->find($id);
         return !empty($record);
     }
 
-    /**
-     * Get last record
-     */
+    /** Ambil data paling terakhir */
     public function last()
     {
         $sql = "SELECT * FROM {$this->table} ORDER BY {$this->primaryKey} DESC LIMIT 1";
         return $this->db->fetch($sql);
     }
 
-    /**
-     * Get first record
-     */
+    /** Ambil data paling pertama */
     public function first()
     {
         $sql = "SELECT * FROM {$this->table} ORDER BY {$this->primaryKey} ASC LIMIT 1";
         return $this->db->fetch($sql);
     }
 
-    /**
-     * Filter only fillable fields from data
-     */
+    /** Saring data, hanya ambil kolom yang boleh diisi (fillable) */
     private function filterFillable($data)
     {
         if (empty($this->fillable)) {
@@ -225,9 +198,7 @@ class BaseModel
         return array_intersect_key($data, array_flip($this->fillable));
     }
 
-    /**
-     * Hide sensitive fields from output
-     */
+    /** Sembunyikan kolom sensitif dari output (misal: password) */
     protected function hideFields($data)
     {
         if (empty($this->hidden)) {
@@ -243,25 +214,19 @@ class BaseModel
         return $data;
     }
 
-    /**
-     * Begin transaction
-     */
+    /** Mulai transaksi database */
     public function beginTransaction()
     {
         return $this->db->beginTransaction();
     }
 
-    /**
-     * Commit transaction
-     */
+    /** Simpan transaksi database */
     public function commit()
     {
         return $this->db->commit();
     }
 
-    /**
-     * Rollback transaction
-     */
+    /** Batalkan transaksi database */
     public function rollback()
     {
         return $this->db->rollback();

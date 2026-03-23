@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Peminjaman Model
+ * Model untuk mengelola data peminjaman alat dan ruangan
  */
 class PeminjamanModel extends BaseModel
 {
@@ -9,7 +9,8 @@ class PeminjamanModel extends BaseModel
     protected $fillable = [
         'user_id',
         'nama_peminjam',
-        'alat_id',
+        'item_type',
+        'item_id',
         'tanggal_pinjam',
         'tanggal_kembali',
         'tanggal_pengembalian',
@@ -17,9 +18,7 @@ class PeminjamanModel extends BaseModel
         'keterangan'
     ];
 
-    /**
-     * Get peminjaman with pagination and filters
-     */
+    /** Ambil daftar peminjaman dengan pagination dan filter */
     public function getPeminjamanPaginated($page = 1, $limit = 10, $search = '', $status = '')
     {
         $limit = $limit ?? Config::ITEMS_PER_PAGE;
@@ -29,7 +28,7 @@ class PeminjamanModel extends BaseModel
         $params = [];
 
         if (!empty($search)) {
-            $whereClause .= ' AND (u.name LIKE :search OR a.nama_alat LIKE :search OR a.kode_alat LIKE :search)';
+            $whereClause .= ' AND (u.name LIKE :search OR a.nama_alat LIKE :search OR a.kode_alat LIKE :search OR r.nama_ruangan LIKE :search OR r.kode_ruangan LIKE :search)';
             $params['search'] = '%' . $search . '%';
         }
 
@@ -40,19 +39,22 @@ class PeminjamanModel extends BaseModel
 
         $countSql = "SELECT COUNT(*) as total FROM peminjaman p
                      LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                     LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                     LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                     LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
                      $whereClause";
 
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
         $sql = "SELECT p.*, u.name as user_name, u.email as user_email, u.foto as user_foto,
-                       a.nama_alat, a.kode_alat, k.name as kategori_name, t.name as tipe_name
+                       COALESCE(a.nama_alat, r.nama_ruangan) as item_name,
+                       COALESCE(a.kode_alat, r.kode_ruangan) as item_code,
+                       k.name as kategori_name, p.item_type
                 FROM peminjaman p
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
+                LEFT JOIN kategori k ON COALESCE(a.kategori_id, r.kategori_id) = k.id AND k.deleted_at IS NULL
                 $whereClause
                 ORDER BY p.created_at DESC
                 LIMIT :limit OFFSET :offset";
@@ -73,45 +75,43 @@ class PeminjamanModel extends BaseModel
         ];
     }
 
-    /**
-     * Get peminjaman with related details
-     */
+    /** Ambil detail peminjaman beserta info alat/ruangan dan user */
     public function getPeminjamanDetails($id)
     {
         $sql = "SELECT p.*, u.name as user_name, u.email as user_email, u.foto as user_foto,
-                       a.nama_alat, a.kode_alat, a.jumlah, a.kondisi, a.gambar,
-                       k.name as kategori_name, t.name as tipe_name
+                       a.nama_alat, a.kode_alat, a.jumlah, a.kondisi, a.gambar as alat_gambar,
+                       r.nama_ruangan, r.kode_ruangan, r.gambar as ruangan_gambar,
+                       k.name as kategori_name
                 FROM peminjaman p
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
+                LEFT JOIN kategori k ON COALESCE(a.kategori_id, r.kategori_id) = k.id AND k.deleted_at IS NULL
                 WHERE p.id = :id AND p.deleted_at IS NULL";
 
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Create new peminjaman
-     */
+    /** Buat peminjaman baru, otomatis update status alat/ruangan kalau langsung dipinjam */
     public function createPeminjaman($data)
     {
         $this->db->beginTransaction();
-
         try {
             if (!isset($data['created_at'])) {
                 $data['created_at'] = date('Y-m-d H:i:s');
             }
 
-            $sql = "INSERT INTO {$this->table} (user_id, nama_peminjam, alat_id, tanggal_pinjam, tanggal_kembali, status, keterangan, created_at)
-                    VALUES (:user_id, :nama_peminjam, :alat_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :created_at)";
+            $sql = "INSERT INTO {$this->table} (user_id, nama_peminjam, item_type, item_id, tanggal_pinjam, tanggal_kembali, status, keterangan, created_at)
+                    VALUES (:user_id, :nama_peminjam, :item_type, :item_id, :tanggal_pinjam, :tanggal_kembali, :status, :keterangan, :created_at)";
 
             $this->db->query($sql, $data);
             $peminjamanId = $this->db->lastInsertId();
 
+            // Kalau langsung DIPINJAM, update status alat/ruangan jadi tidak tersedia
             if ($data['status'] === 'DIPINJAM') {
-                $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
-                    'id' => $data['alat_id']
+                $tableToUpdate = $data['item_type'] === 'ruangan' ? 'ruangan' : 'alat';
+                $this->db->query("UPDATE {$tableToUpdate} SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
+                    'id' => $data['item_id']
                 ]);
             }
 
@@ -124,9 +124,7 @@ class PeminjamanModel extends BaseModel
         }
     }
 
-    /**
-     * Update peminjaman status
-     */
+    /** Update status peminjaman dan sekaligus update status alat/ruangan */
     public function updateStatus($id, $status, $tanggalPengembalian = null)
     {
         $this->db->beginTransaction();
@@ -152,13 +150,17 @@ class PeminjamanModel extends BaseModel
             $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL";
             $this->db->query($sql, $params);
 
+            // Kalau selesai, kembalikan status alat/ruangan jadi TERSEDIA
             if ($status === 'SELESAI') {
-                $this->db->query("UPDATE alat SET status = 'TERSEDIA', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
-                    'id' => $peminjaman['alat_id']
+                $tableToUpdate = $peminjaman['item_type'] === 'ruangan' ? 'ruangan' : 'alat';
+                $this->db->query("UPDATE {$tableToUpdate} SET status = 'TERSEDIA', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
+                    'id' => $peminjaman['item_id']
                 ]);
+            // Kalau disetujui dari PENDING, update jadi DIPINJAM
             } elseif (in_array($status, ['DIPINJAM', 'DISETUJUI'], true) && $peminjaman['status'] === 'PENDING') {
-                $this->db->query("UPDATE alat SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
-                    'id' => $peminjaman['alat_id']
+                $tableToUpdate = $peminjaman['item_type'] === 'ruangan' ? 'ruangan' : 'alat';
+                $this->db->query("UPDATE {$tableToUpdate} SET status = 'DIPINJAM', updated_at = NOW() WHERE id = :id AND deleted_at IS NULL", [
+                    'id' => $peminjaman['item_id']
                 ]);
             }
 
@@ -171,9 +173,7 @@ class PeminjamanModel extends BaseModel
         }
     }
 
-    /**
-     * Return asset
-     */
+    /** Proses pengembalian barang/ruangan */
     public function returnAsset($id, $kondisi = null)
     {
         $this->db->beginTransaction();
@@ -184,6 +184,7 @@ class PeminjamanModel extends BaseModel
                 throw new Exception("Peminjaman not found");
             }
 
+            // Update peminjaman jadi SELESAI
             $updateData = [
                 'status' => 'SELESAI',
                 'tanggal_pengembalian' => date('Y-m-d'),
@@ -200,20 +201,20 @@ class PeminjamanModel extends BaseModel
             $sql = "UPDATE {$this->table} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL";
             $this->db->query($sql, $params);
 
+            // Kembalikan status alat/ruangan jadi TERSEDIA
             $assetUpdate = ['status' => 'TERSEDIA', 'updated_at' => date('Y-m-d H:i:s')];
-            if ($kondisi) {
+            if ($kondisi && $peminjaman['item_type'] === 'alat') {
                 $assetUpdate['kondisi'] = $kondisi;
             }
-
             $setClause = [];
-            $params = ['id' => $peminjaman['alat_id']];
+            $params = ['id' => $peminjaman['item_id']];
             foreach ($assetUpdate as $key => $value) {
                 $setClause[] = "$key = :$key";
                 $params[$key] = $value;
             }
 
-            $this->db->query("UPDATE alat SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL", $params);
-
+            $tableToUpdate = $peminjaman['item_type'] === 'ruangan' ? 'ruangan' : 'alat';
+            $this->db->query("UPDATE {$tableToUpdate} SET " . implode(', ', $setClause) . " WHERE id = :id AND deleted_at IS NULL", $params);
             $this->db->commit();
             return true;
 
@@ -223,33 +224,35 @@ class PeminjamanModel extends BaseModel
         }
     }
 
-    /**
-     * Get peminjaman by status
-     */
+    /** Ambil daftar peminjaman berdasarkan status */
     public function getPeminjamanByStatus($status)
     {
         $sql = "SELECT p.*, u.name as user_name, u.email as user_email,
-                       a.nama_alat, a.kode_alat, k.name as kategori_name
+                       COALESCE(a.nama_alat, r.nama_ruangan) as item_name,
+                       COALESCE(a.kode_alat, r.kode_ruangan) as item_code,
+                       k.name as kategori_name, p.item_type
                 FROM peminjaman p
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
+                LEFT JOIN kategori k ON COALESCE(a.kategori_id, r.kategori_id) = k.id AND k.deleted_at IS NULL
                 WHERE p.status = :status AND p.deleted_at IS NULL
                 ORDER BY p.created_at DESC";
 
         return $this->db->fetchAll($sql, ['status' => $status]);
     }
 
-    /**
-     * Get peminjaman by user
-     */
+    /** Ambil daftar peminjaman milik user tertentu */
     public function getPeminjamanByUser($userId, $status = null, $limit = null)
     {
-        $sql = "SELECT p.*, a.nama_alat, a.kode_alat, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT p.*,
+                       COALESCE(a.nama_alat, r.nama_ruangan) as item_name,
+                       COALESCE(a.kode_alat, r.kode_ruangan) as item_code,
+                       k.name as kategori_name, p.item_type
                 FROM peminjaman p
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
+                LEFT JOIN kategori k ON COALESCE(a.kategori_id, r.kategori_id) = k.id AND k.deleted_at IS NULL
                 WHERE p.user_id = :user_id AND p.deleted_at IS NULL";
 
         $params = ['user_id' => $userId];
@@ -269,17 +272,15 @@ class PeminjamanModel extends BaseModel
         return $this->db->fetchAll($sql, $params);
     }
 
-    /**
-     * Get peminjaman by asset
-     */
-    public function getPeminjamanByAlat($alatId, $status = null)
+    /** Ambil daftar peminjaman untuk item tertentu (alat atau ruangan) */
+    public function getPeminjamanByItem($itemId, $itemType, $status = null)
     {
         $sql = "SELECT p.*, u.name as user_name, u.email, u.foto
                 FROM peminjaman p
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                WHERE p.alat_id = :alat_id AND p.deleted_at IS NULL";
+                WHERE p.item_id = :item_id AND p.item_type = :item_type AND p.deleted_at IS NULL";
 
-        $params = ['alat_id' => $alatId];
+        $params = ['item_id' => $itemId, 'item_type' => $itemType];
 
         if ($status) {
             $sql .= " AND p.status = :status";
@@ -291,17 +292,18 @@ class PeminjamanModel extends BaseModel
         return $this->db->fetchAll($sql, $params);
     }
 
-    /**
-     * Get overdue peminjaman
-     */
+    /** Ambil daftar peminjaman yang sudah melewati batas waktu pengembalian */
     public function getOverduePeminjaman()
     {
         $sql = "SELECT p.*, u.name as user_name, u.email, u.foto,
-                       a.nama_alat, a.kode_alat, k.name as kategori_name
+                       COALESCE(a.nama_alat, r.nama_ruangan) as item_name,
+                       COALESCE(a.kode_alat, r.kode_ruangan) as item_code,
+                       k.name as kategori_name, p.item_type
                 FROM peminjaman p
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
+                LEFT JOIN kategori k ON COALESCE(a.kategori_id, r.kategori_id) = k.id AND k.deleted_at IS NULL
                 WHERE p.status = 'DIPINJAM'
                   AND p.tanggal_kembali < CURDATE()
                   AND p.deleted_at IS NULL
@@ -310,9 +312,7 @@ class PeminjamanModel extends BaseModel
         return $this->db->fetchAll($sql);
     }
 
-    /**
-     * Get peminjaman statistics
-     */
+    /** Ambil statistik peminjaman (total, per status, terlambat, hari ini, bulan ini) */
     public function getPeminjamanStatistics()
     {
         $stats = [];
@@ -349,9 +349,7 @@ class PeminjamanModel extends BaseModel
         return $stats;
     }
 
-    /**
-     * Check if alat is available for borrowing
-     */
+    /** Cek apakah alat tersedia untuk dipinjam */
     public function isAlatAvailable($alatId)
     {
         $sql = "SELECT status FROM alat WHERE id = :id AND deleted_at IS NULL";
@@ -364,54 +362,49 @@ class PeminjamanModel extends BaseModel
         return $result['status'] === 'TERSEDIA';
     }
 
-    /**
-     * Get active peminjaman for alat
-     */
-    public function getActivePeminjamanByAlat($alatId)
+    /** Ambil peminjaman aktif (PENDING/DIPINJAM) untuk item tertentu */
+    public function getActivePeminjamanByItem($itemId, $itemType)
     {
         $sql = "SELECT p.*, u.name as user_name, u.foto
                 FROM peminjaman p
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                WHERE p.alat_id = :alat_id
+                WHERE p.item_id = :item_id
+                  AND p.item_type = :item_type
                   AND p.status IN ('PENDING', 'DIPINJAM')
                   AND p.deleted_at IS NULL
                 ORDER BY p.created_at DESC
                 LIMIT 1";
 
-        return $this->db->fetch($sql, ['alat_id' => $alatId]);
+        return $this->db->fetch($sql, ['item_id' => $itemId, 'item_type' => $itemType]);
     }
 
-    /**
-     * Soft delete peminjaman
-     */
+    /** Hapus peminjaman (soft delete) */
     public function softDelete($id)
     {
         $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
-    /**
-     * Get recent peminjaman for dashboard (simple version)
-     */
+    /** Ambil peminjaman terbaru untuk dashboard */
     public function getRecentPeminjaman($limit = 10)
     {
         try {
             $sql = "SELECT p.*, u.name as user_name, u.email as user_email,
-                           a.nama_alat, a.kode_alat
+                           COALESCE(a.nama_alat, r.nama_ruangan) as item_name,
+                           COALESCE(a.kode_alat, r.kode_ruangan) as item_code,
+                           p.item_type
                     FROM peminjaman p
                     LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
-                    LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                    LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                    LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
                     WHERE p.deleted_at IS NULL
                     ORDER BY p.created_at DESC
                     LIMIT :limit";
 
             $stmt = $this->db->query($sql, ['limit' => $limit]);
-            $records = $stmt ? $stmt->fetchAll() : [];
-
-            error_log("Simple getRecentPeminjaman result count: " . count($records));
-            return $records;
+            return $stmt ? $stmt->fetchAll() : [];
         } catch (Exception $e) {
-            error_log("Error in getRecentPeminjaman: " . $e->getMessage());
+            error_log("Error ambil peminjaman terbaru: " . $e->getMessage());
             return [];
         }
     }

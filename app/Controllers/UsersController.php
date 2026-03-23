@@ -8,9 +8,9 @@ class UsersController extends BaseController
     private $alatModel;
     private $peminjamanModel;
     private $userModel;
-    private $kategoriAlatModel;
-    private $tipeAlatModel;
+    private $kategoriModel;
     private $notifikasiModel;
+
 
     public function __construct()
     {
@@ -18,10 +18,10 @@ class UsersController extends BaseController
         $this->alatModel = new AlatModel();
         $this->peminjamanModel = new PeminjamanModel();
         $this->userModel = new UserModel();
-        $this->kategoriAlatModel = new KategoriAlatModel();
-        $this->tipeAlatModel = new TipeAlatModel();
+        $this->kategoriModel = new KategoriModel();
         $this->notifikasiModel = new NotifikasiModel();
     }
+
 
     /**
      * Show dashboard page
@@ -260,7 +260,7 @@ class UsersController extends BaseController
 
         try {
             $result = $this->alatModel->getAlatPaginated($page, 10, $search, $kategori, $status);
-            $kategoriList = $this->kategoriAlatModel->getAllKategori();
+            $kategoriList = $this->kategoriModel->getAllKategori();
 
             $data = [
                 'title' => 'Daftar Alat - LBMS',
@@ -309,7 +309,7 @@ class UsersController extends BaseController
                 return;
             }
 
-            $peminjamanHistory = $this->peminjamanModel->getPeminjamanByAlat($id);
+            $peminjamanHistory = $this->peminjamanModel->getPeminjamanByItem($id, 'alat');
 
             $data = [
                 'title' => 'Detail Alat - LBMS',

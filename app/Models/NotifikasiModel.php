@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Notifikasi Model
+ * Model untuk mengelola notifikasi sistem
  */
 class NotifikasiModel extends BaseModel
 {
@@ -13,9 +13,7 @@ class NotifikasiModel extends BaseModel
         'is_read'
     ];
 
-    /**
-     * Create new notification
-     */
+    /** Buat notifikasi baru dan kirim ke user-user tertentu */
     public function createNotification($title, $description = null, $userIds = [], $peminjamanId = null)
     {
         $this->db->beginTransaction();
@@ -31,6 +29,7 @@ class NotifikasiModel extends BaseModel
 
             $notificationId = $this->db->lastInsertId();
 
+            // Hubungkan notifikasi ke setiap user penerima
             if (!empty($userIds)) {
                 foreach ($userIds as $userId) {
                     $sql = "INSERT INTO notifikasi_users (notifikasi_id, user_id, created_at)
@@ -51,19 +50,17 @@ class NotifikasiModel extends BaseModel
         }
     }
 
-    /**
-     * Get notifications for user
-     */
+    /** Ambil daftar notifikasi untuk user tertentu */
     public function getNotificationsForUser($userId, $limit = 10, $unreadOnly = false)
     {
         $whereClause = "WHERE nu.user_id = :user_id AND n.deleted_at IS NULL";
         $params = ['user_id' => $userId];
 
         if ($unreadOnly) {
-            $whereClause .= " AND nu.is_read = FALSE AND n.is_read = FALSE";
+            $whereClause .= " AND nu.is_read = FALSE";
         }
 
-        $sql = "SELECT n.*, nu.is_read as user_read, nu.created_at as assigned_at
+        $sql = "SELECT n.*, nu.is_read, nu.created_at as assigned_at
                 FROM {$this->table} n
                 INNER JOIN notifikasi_users nu ON n.id = nu.notifikasi_id
                 {$whereClause}
@@ -73,17 +70,13 @@ class NotifikasiModel extends BaseModel
         return $this->db->fetchAll($sql, array_merge($params, ['limit' => $limit]));
     }
 
-    /**
-     * Alias for getNotificationsForUser for consistency with other models
-     */
+    /** Alias untuk getNotificationsForUser */
     public function getNotificationsByUser($userId, $limit = 10, $unreadOnly = false)
     {
         return $this->getNotificationsForUser($userId, $limit, $unreadOnly);
     }
 
-    /**
-     * Mark notification as read for user
-     */
+    /** Tandai notifikasi sebagai sudah dibaca untuk user tertentu */
     public function markAsRead($notificationId, $userId)
     {
         $sql = "UPDATE notifikasi_users
@@ -96,9 +89,7 @@ class NotifikasiModel extends BaseModel
         ]);
     }
 
-    /**
-     * Mark all notifications as read for user
-     */
+    /** Tandai semua notifikasi user sebagai sudah dibaca */
     public function markAllAsRead($userId)
     {
         $sql = "UPDATE notifikasi_users
@@ -108,9 +99,7 @@ class NotifikasiModel extends BaseModel
         return $this->db->query($sql, ['user_id' => $userId]);
     }
 
-    /**
-     * Get unread count for user
-     */
+    /** Hitung jumlah notifikasi yang belum dibaca untuk user tertentu */
     public function getUnreadCount($userId)
     {
         $sql = "SELECT COUNT(*) as count
@@ -118,43 +107,39 @@ class NotifikasiModel extends BaseModel
                 INNER JOIN notifikasi_users nu ON n.id = nu.notifikasi_id
                 WHERE nu.user_id = :user_id
                   AND nu.is_read = FALSE
-                  AND n.is_read = FALSE
                   AND n.deleted_at IS NULL";
 
         $result = $this->db->fetch($sql, ['user_id' => $userId]);
         return $result['count'] ?? 0;
     }
 
-    /**
-     * Delete notification
-     */
+    /** Hapus notifikasi (soft delete) */
     public function deleteNotification($id)
     {
         $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
-    /**
-     * Get notification by ID with details
-     */
+    /** Ambil detail notifikasi beserta info peminjaman terkait */
     public function getNotificationDetails($id)
     {
         $sql = "SELECT n.*,
                        p.id as peminjaman_id, p.tanggal_pinjam, p.status as peminjaman_status,
-                       a.nama_alat, a.kode_alat,
+                       p.item_type, p.item_id,
+                       COALESCE(a.nama_alat, r.nama_ruangan) as item_name,
+                       COALESCE(a.kode_alat, r.kode_ruangan) as item_code,
                        u.name as user_name, u.email as user_email
                 FROM {$this->table} n
                 LEFT JOIN peminjaman p ON n.peminjaman_id = p.id AND p.deleted_at IS NULL
-                LEFT JOIN alat a ON p.alat_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN alat a ON p.item_type = 'alat' AND p.item_id = a.id AND a.deleted_at IS NULL
+                LEFT JOIN ruangan r ON p.item_type = 'ruangan' AND p.item_id = r.id AND r.deleted_at IS NULL
                 LEFT JOIN users u ON p.user_id = u.id AND u.deleted_at IS NULL
                 WHERE n.id = :id AND n.deleted_at IS NULL";
 
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Get notifications by peminjaman
-     */
+    /** Ambil daftar notifikasi yang terkait dengan peminjaman tertentu */
     public function getNotificationsByPeminjaman($peminjamanId)
     {
         $sql = "SELECT n.* FROM {$this->table} n
@@ -165,9 +150,7 @@ class NotifikasiModel extends BaseModel
         return $this->db->fetchAll($sql, ['peminjaman_id' => $peminjamanId]);
     }
 
-    /**
-     * Create system-wide notification (for all users)
-     */
+    /** Buat notifikasi untuk semua user (bisa difilter berdasarkan role) */
     public function createSystemNotification($title, $description = null, $role = null)
     {
         $this->db->beginTransaction();
@@ -182,6 +165,7 @@ class NotifikasiModel extends BaseModel
 
             $notificationId = $this->db->lastInsertId();
 
+            // Ambil semua user (atau filter per role) lalu kirim notifikasi
             $userWhere = $role ? "WHERE role = :role AND deleted_at IS NULL" : "WHERE deleted_at IS NULL";
             $userParams = $role ? ['role' => $role] : [];
 
@@ -206,9 +190,7 @@ class NotifikasiModel extends BaseModel
         }
     }
 
-    /**
-     * Get paginated notifications for user
-     */
+    /** Ambil notifikasi user dengan pagination */
     public function getNotificationsPaginated($userId, $page = 1, $limit = 10)
     {
         $offset = ($page - 1) * $limit;
@@ -244,9 +226,7 @@ class NotifikasiModel extends BaseModel
         ];
     }
 
-    /**
-     * Delete notification for specific user
-     */
+    /** Hapus notifikasi hanya untuk user tertentu (bukan global) */
     public function deleteNotificationForUser($notificationId, $userId)
     {
         $sql = "DELETE FROM notifikasi_users
@@ -258,9 +238,7 @@ class NotifikasiModel extends BaseModel
         ]);
     }
 
-    /**
-     * Get notification statistics
-     */
+    /** Ambil statistik notifikasi secara keseluruhan */
     public function getNotificationStatistics()
     {
         $stats = [];
@@ -287,9 +265,7 @@ class NotifikasiModel extends BaseModel
         return $stats;
     }
 
-    /**
-     * Mark notification as read globally (for all users)
-     */
+    /** Tandai notifikasi sebagai sudah dibaca untuk semua user (global) */
     public function markAsReadGlobally($notificationId)
     {
         $sql = "UPDATE {$this->table} SET is_read = TRUE, updated_at = NOW()
@@ -298,9 +274,7 @@ class NotifikasiModel extends BaseModel
         return $this->db->query($sql, ['id' => $notificationId]);
     }
 
-    /**
-     * Get recent notifications for all users (admin view)
-     */
+    /** Ambil notifikasi terbaru untuk tampilan admin */
     public function getRecentNotifications($limit = 20)
     {
         $sql = "SELECT n.*,

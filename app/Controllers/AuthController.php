@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Auth Controller
+ * Controller untuk autentikasi (login, register, logout)
  */
 class AuthController extends BaseController
 {
@@ -13,9 +13,7 @@ class AuthController extends BaseController
         $this->userModel = new UserModel();
     }
 
-    /**
-     * Show login page
-     */
+    /** Tampilkan halaman login */
     public function login()
     {
         if ($this->isLoggedIn()) {
@@ -35,9 +33,7 @@ class AuthController extends BaseController
         $this->view('auth/login', $data);
     }
 
-    /**
-     * Handle login request
-     */
+    /** Proses login user */
     public function doLogin()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -50,13 +46,13 @@ class AuthController extends BaseController
         $remember = isset($_POST['remember']);
 
         if (empty($email) || empty($password)) {
-            $_SESSION['error'] = 'Email and password are required';
+            $_SESSION['error'] = 'Email dan password harus diisi';
             $this->redirect('/login');
             return;
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['error'] = 'Invalid email format';
+            $_SESSION['error'] = 'Format email tidak valid';
             $this->redirect('/login');
             return;
         }
@@ -67,18 +63,21 @@ class AuthController extends BaseController
             if ($user && $this->userModel->verifyPassword($password, $user['password_hash'])) {
                 $status = strtoupper($user['status'] ?? 'INACTIVE');
 
+                // Cek apakah akun di-blacklist
                 if ($status === 'BLACKLIST') {
                     $_SESSION['error'] = 'Akun Anda di-blacklist. Silakan hubungi administrator.';
                     $this->redirect('/login');
                     return;
                 }
 
+                // Cek apakah akun aktif
                 if ($status !== 'ACTIVE') {
                     $_SESSION['error'] = 'Akun Anda tidak aktif. Silakan hubungi administrator.';
                     $this->redirect('/login');
                     return;
                 }
 
+                // Simpan data user ke session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_name'] = $user['name'];
@@ -88,27 +87,26 @@ class AuthController extends BaseController
 
                 $this->userModel->updateLastLogin($user['id']);
 
+                // Simpan token "ingat saya" kalau dicentang
                 if ($remember) {
                     $token = bin2hex(random_bytes(32));
-                    setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/'); 
+                    setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/');
                 }
 
                 $this->redirect('/dashboard');
                 return;
             } else {
-                $_SESSION['error'] = 'Invalid email or password';
+                $_SESSION['error'] = 'Email atau password salah';
             }
         } catch (Exception $e) {
             error_log("Login error: " . $e->getMessage());
-            $_SESSION['error'] = 'An error occurred during login. Please try again.';
+            $_SESSION['error'] = 'Terjadi kesalahan saat login. Silakan coba lagi.';
         }
 
         $this->redirect('/login');
     }
 
-    /**
-     * Show register page
-     */
+    /** Tampilkan halaman registrasi */
     public function register()
     {
         if ($this->isLoggedIn()) {
@@ -128,9 +126,7 @@ class AuthController extends BaseController
         $this->view('auth/register', $data);
     }
 
-    /**
-     * Handle register request
-     */
+    /** Proses registrasi user baru */
     public function doRegister()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -144,30 +140,31 @@ class AuthController extends BaseController
         $confirmPassword = $_POST['confirm_password'] ?? '';
         $role = $_POST['role'] ?? 'USER';
 
+        // Validasi input
         $errors = [];
 
         if (empty($name)) {
-            $errors[] = 'Full name is required';
+            $errors[] = 'Nama lengkap wajib diisi';
         } elseif (strlen($name) < 3) {
-            $errors[] = 'Full name must be at least 3 characters long';
+            $errors[] = 'Nama lengkap minimal 3 karakter';
         }
 
         if (empty($email)) {
-            $errors[] = 'Email address is required';
+            $errors[] = 'Alamat email wajib diisi';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Invalid email format';
+            $errors[] = 'Format email tidak valid';
         }
 
         if (empty($password)) {
-            $errors[] = 'Password is required';
+            $errors[] = 'Password wajib diisi';
         }
 
         if ($password !== $confirmPassword) {
-            $errors[] = 'Passwords do not match';
+            $errors[] = 'Password dan konfirmasi password tidak cocok';
         }
 
         if (!in_array($role, ['USER', 'ADMIN'])) {
-            $errors[] = 'Invalid account type selected';
+            $errors[] = 'Tipe akun tidak valid';
         }
 
         if (!empty($errors)) {
@@ -177,8 +174,9 @@ class AuthController extends BaseController
         }
 
         try {
+            // Cek apakah email sudah terdaftar
             if ($this->userModel->emailExists($email)) {
-                $_SESSION['error'] = 'Email address is already registered';
+                $_SESSION['error'] = 'Email sudah terdaftar. Gunakan email lain.';
                 $this->redirect('/register');
                 return;
             }
@@ -194,25 +192,24 @@ class AuthController extends BaseController
             $userId = $this->userModel->createUser($userData);
 
             if ($userId) {
-                $_SESSION['success'] = 'Registration successful! You can now login.';
+                $_SESSION['success'] = 'Registrasi berhasil! Silakan login.';
                 $this->redirect('/login');
             } else {
-                $_SESSION['error'] = 'Registration failed. Please try again.';
+                $_SESSION['error'] = 'Registrasi gagal. Silakan coba lagi.';
                 $this->redirect('/register');
             }
 
         } catch (Exception $e) {
             error_log("Registration error: " . $e->getMessage());
-            $_SESSION['error'] = 'An error occurred during registration. Please try again.';
+            $_SESSION['error'] = 'Terjadi kesalahan saat registrasi. Silakan coba lagi.';
             $this->redirect('/register');
         }
     }
 
-    /**
-     * Handle logout request
-     */
+    /** Proses logout user */
     public function logout()
     {
+        // Hapus cookie "ingat saya" kalau ada
         if (isset($_COOKIE['remember_token'])) {
             setcookie('remember_token', '', time() - 3600, '/');
             unset($_COOKIE['remember_token']);
@@ -222,14 +219,12 @@ class AuthController extends BaseController
         session_destroy();
 
         session_start();
-        $_SESSION['success'] = 'You have been logged out successfully';
+        $_SESSION['success'] = 'Anda telah berhasil keluar';
 
         $this->redirect('/login');
     }
 
-    /**
-     * Show forgot password page
-     */
+    /** Tampilkan halaman lupa password */
     public function forgotPassword()
     {
         if ($this->isLoggedIn()) {
@@ -238,7 +233,7 @@ class AuthController extends BaseController
         }
 
         $data = [
-            'title' => 'Forgot Password - LBMS',
+            'title' => 'Lupa Password - LBMS',
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -249,9 +244,7 @@ class AuthController extends BaseController
         $this->view('auth/forgot-password', $data);
     }
 
-    /**
-     * Handle forgot password request
-     */
+    /** Proses permintaan reset password */
     public function doForgotPassword()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -262,7 +255,7 @@ class AuthController extends BaseController
         $email = trim($_POST['email'] ?? '');
 
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $_SESSION['error'] = 'Please enter a valid email address';
+            $_SESSION['error'] = 'Masukkan alamat email yang valid';
             $this->redirect('/forgot-password');
             return;
         }
@@ -274,22 +267,20 @@ class AuthController extends BaseController
                 $token = bin2hex(random_bytes(32));
                 $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-
-                $_SESSION['success'] = 'Password reset instructions have been sent to your email address';
+                $_SESSION['success'] = 'Instruksi reset password telah dikirim ke email Anda';
             } else {
-                $_SESSION['success'] = 'If an account with that email exists, password reset instructions have been sent';
+                // Tetap tampilkan pesan sukses supaya tidak bocor info akun
+                $_SESSION['success'] = 'Jika akun dengan email tersebut ada, instruksi reset password telah dikirim';
             }
         } catch (Exception $e) {
             error_log("Forgot password error: " . $e->getMessage());
-            $_SESSION['error'] = 'An error occurred. Please try again.';
+            $_SESSION['error'] = 'Terjadi kesalahan. Silakan coba lagi.';
         }
 
         $this->redirect('/forgot-password');
     }
 
-    /**
-     * Check if user is logged in (for AJAX requests)
-     */
+    /** Cek apakah user sudah login (untuk request AJAX) */
     public function checkAuth()
     {
         header('Content-Type: application/json');

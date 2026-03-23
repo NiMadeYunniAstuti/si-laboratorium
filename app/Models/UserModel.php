@@ -1,7 +1,7 @@
 <?php
 
 /**
- * User Model
+ * Model untuk mengelola data pengguna (user)
  */
 class UserModel extends BaseModel
 {
@@ -17,27 +17,21 @@ class UserModel extends BaseModel
     ];
     protected $hidden = ['password_hash'];
 
-    /**
-     * Find user by email
-     */
+    /** Cari user berdasarkan email */
     public function findByEmail($email)
     {
         $sql = "SELECT * FROM {$this->table} WHERE email = :email AND deleted_at IS NULL LIMIT 1";
         return $this->db->fetch($sql, ['email' => $email]);
     }
 
-    /**
-     * Get user status by ID
-     */
+    /** Ambil status user berdasarkan ID */
     public function getStatusById($id)
     {
         $sql = "SELECT status FROM {$this->table} WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Get users with pagination and filters
-     */
+    /** Ambil daftar user dengan pagination dan filter pencarian */
     public function getUsersPaginated($page = 1, $limit = 10, $search = '', $status = '', $role = '')
     {
         $limit = $limit ?? Config::ITEMS_PER_PAGE;
@@ -86,9 +80,7 @@ class UserModel extends BaseModel
         ];
     }
 
-    /**
-     * Get user by ID with details
-     */
+    /** Ambil detail user beserta jumlah peminjamannya */
     public function getUserDetails($id)
     {
         $sql = "SELECT u.*, COUNT(p.id) as total_peminjaman,
@@ -101,9 +93,7 @@ class UserModel extends BaseModel
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Create new user with password hashing
-     */
+    /** Buat user baru (password otomatis di-hash) */
     public function createUser($data)
     {
         if (isset($data['password'])) {
@@ -118,9 +108,7 @@ class UserModel extends BaseModel
         return $this->create($data);
     }
 
-    /**
-     * Update user
-     */
+    /** Update data user (password otomatis di-hash kalau ada) */
     public function updateUser($id, $data)
     {
         if (isset($data['password'])) {
@@ -132,29 +120,30 @@ class UserModel extends BaseModel
         return $this->update($id, $data);
     }
 
-    /**
-     * Update user password
-     */
+    /** Ganti password user */
     public function updatePassword($userId, $password)
     {
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         $sql = "UPDATE {$this->table} SET password_hash = :password_hash, updated_at = NOW()
                 WHERE id = :id AND deleted_at IS NULL";
-        return $this->db->query($sql, ['password_hash' => $passwordHash, 'id' => $userId]);
+        $stmt = $this->db->query($sql, ['password_hash' => $passwordHash, 'id' => $userId]);
+
+        if ($stmt === false) {
+            error_log("Gagal update password untuk user {$userId}");
+            return false;
+        }
+
+        return $stmt->rowCount() > 0;
     }
 
-    /**
-     * Update user last login
-     */
+    /** Catat waktu login terakhir */
     public function updateLastLogin($userId)
     {
         $sql = "UPDATE {$this->table} SET last_login = NOW() WHERE id = :id AND deleted_at IS NULL";
         return $this->db->query($sql, ['id' => $userId]);
     }
 
-    /**
-     * Toggle user status
-     */
+    /** Toggle status user (ACTIVE jadi INACTIVE, atau sebaliknya) */
     public function toggleStatus($id)
     {
         $sql = "SELECT status FROM {$this->table} WHERE id = :id AND deleted_at IS NULL";
@@ -168,9 +157,7 @@ class UserModel extends BaseModel
         return $this->updateStatus($id, $newStatus);
     }
 
-    /**
-     * Update user status
-     */
+    /** Update status user */
     public function updateStatus($id, $status)
     {
         $sql = "UPDATE {$this->table} SET status = :status, updated_at = NOW()
@@ -178,9 +165,7 @@ class UserModel extends BaseModel
         return $this->db->query($sql, ['status' => $status, 'id' => $id]);
     }
 
-    /**
-     * Get users by role
-     */
+    /** Ambil daftar user berdasarkan role */
     public function getUsersByRole($role)
     {
         $sql = "SELECT * FROM {$this->table}
@@ -190,9 +175,7 @@ class UserModel extends BaseModel
         return $this->db->fetchAll($sql, ['role' => $role]);
     }
 
-    /**
-     * Get users by status
-     */
+    /** Ambil daftar user berdasarkan status */
     public function getUsersByStatus($status)
     {
         $sql = "SELECT * FROM {$this->table}
@@ -202,9 +185,7 @@ class UserModel extends BaseModel
         return $this->db->fetchAll($sql, ['status' => $status]);
     }
 
-    /**
-     * Search users
-     */
+    /** Cari user berdasarkan nama atau email */
     public function searchUsers($query, $limit = 20)
     {
         $sql = "SELECT * FROM {$this->table}
@@ -219,17 +200,13 @@ class UserModel extends BaseModel
         ]);
     }
 
-    /**
-     * Verify user password
-     */
+    /** Verifikasi password user */
     public function verifyPassword($password, $hash)
     {
         return password_verify($password, $hash);
     }
 
-    /**
-     * Check if email exists
-     */
+    /** Cek apakah email sudah terdaftar */
     public function emailExists($email, $excludeId = null)
     {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE email = :email AND deleted_at IS NULL";
@@ -244,9 +221,7 @@ class UserModel extends BaseModel
         return ($result['count'] ?? 0) > 0;
     }
 
-    /**
-     * Get user statistics
-     */
+    /** Ambil statistik user (total, per role, per status, dll) */
     public function getUserStatistics()
     {
         $stats = [];
@@ -283,9 +258,7 @@ class UserModel extends BaseModel
         return $stats;
     }
 
-    /**
-     * Update user photo
-     */
+    /** Update foto profil user */
     public function updatePhoto($id, $foto)
     {
         $sql = "UPDATE {$this->table} SET foto = :foto, updated_at = NOW()
@@ -293,18 +266,14 @@ class UserModel extends BaseModel
         return $this->db->query($sql, ['foto' => $foto, 'id' => $id]);
     }
 
-    /**
-     * Soft delete user
-     */
+    /** Hapus user (soft delete, hanya tandai deleted_at) */
     public function softDelete($id)
     {
         $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";
         return $this->db->query($sql, ['id' => $id]);
     }
 
-    /**
-     * Get recent users
-     */
+    /** Ambil user terbaru */
     public function getRecentUsers($limit = 5)
     {
         $sql = "SELECT * FROM {$this->table}

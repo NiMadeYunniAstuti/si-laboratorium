@@ -46,7 +46,7 @@ $router->get('/', function() {
     exit;
 });
 
-$router->get('/test', 'AdminController', 'dashboard');
+
 
 $router->get('/login', 'AuthController', 'login');
 $router->post('/login', 'AuthController', 'doLogin');
@@ -59,28 +59,34 @@ $router->get('/profile', 'AdminController', 'profile', ['auth']);
 $router->post('/profile', 'AdminController', 'updateProfile', ['auth']);
 $router->post('/change-password', 'AdminController', 'changePassword', ['auth']);
 
-$router->get('/users', 'AdminController', 'dataUsers', ['auth']);
-$router->get('/users/new', 'AdminController', 'newUser', ['auth']);
-$router->get('/users/{id}/edit', 'AdminController', 'editUser', ['auth']);
-$router->get('/users/{id}', 'AdminController', 'detailUser', ['auth']);
+$router->get('/users', 'AdminController', 'dataUsers', ['auth', 'admin']);
+$router->get('/users/new', 'AdminController', 'newUser', ['auth', 'admin']);
+$router->get('/users/{id}/edit', 'AdminController', 'editUser', ['auth', 'admin']);
+$router->get('/users/{id}', 'AdminController', 'detailUser', ['auth', 'admin']);
 $router->get('/alat', 'AdminController', 'manajemenAlat', ['auth']);
 $router->get('/alat/new', 'AdminController', 'newAlat', ['auth']);
 $router->get('/alat/{id}/edit', 'AdminController', 'editAlat', ['auth']);
 $router->get('/alat/{id}/detail', 'AdminController', 'detailAlat', ['auth']);
+$router->get('/ruangan', 'AdminController', 'manajemenRuangan', ['auth', 'admin']);
+$router->get('/ruangan/new', 'AdminController', 'newRuangan', ['auth', 'admin']);
+$router->get('/ruangan/{id}/edit', 'AdminController', 'editRuangan', ['auth', 'admin']);
+$router->get('/ruangan/{id}/detail', 'AdminController', 'detailRuangan', ['auth', 'admin']);
 $router->get('/peminjaman', 'AdminController', 'peminjaman', ['auth']);
 $router->get('/peminjaman/new', 'AdminController', 'newPeminjaman', ['auth']);
 $router->get('/peminjaman/{id}/detail', 'AdminController', 'detailPeminjaman', ['auth']);
 $router->get('/settings', 'AdminController', 'settings', ['auth']);
 $router->get('/settings/profile', 'AdminController', 'settingsProfile', ['auth']);
 $router->get('/settings/privacy-security', 'AdminController', 'settingsPrivacySecurity', ['auth']);
+$router->post('/settings/privacy-security/update', 'AdminController', 'changePassword', ['auth']);
 
 $router->get('/notifications', 'AdminController', 'notifications', ['auth']);
 $router->post('/notifications/mark-read/{id}', 'AdminController', 'markNotificationRead', ['auth']);
+$router->post('/notifications/mark-all-read', 'AdminController', 'markAllNotificationsRead', ['auth']);
 $router->delete('/notifications/delete/{id}', 'AdminController', 'deleteNotification', ['auth']);
 
-$router->get('/admin/users', 'AdminController', 'users');
-$router->post('/admin/users', 'AdminController', 'createUser');
-$router->get('/admin/users/toggle/{id}', 'AdminController', 'toggleUserStatus');
+$router->get('/admin/users', 'AdminController', 'users', ['auth']);
+$router->post('/admin/users', 'AdminController', 'createUser', ['auth']);
+$router->get('/admin/users/toggle/{id}', 'AdminController', 'toggleUserStatus', ['auth']);
 
 $router->post('/alat/create', 'AdminController', 'createAlat', ['auth']);
 $router->post('/alat/{id}/update', 'AdminController', 'updateAlat', ['auth']);
@@ -101,5 +107,10 @@ $router->get('/peminjaman/batalkan/{id}', 'AdminController', 'batalkanPeminjaman
 $router->post('/peminjaman/{id}/proses', 'AdminController', 'prosesPeminjaman', ['auth']);
 $router->post('/peminjaman/{id}/tolak', 'AdminController', 'tolakPeminjaman', ['auth']);
 $router->post('/peminjaman/{id}/selesaikan', 'AdminController', 'selesaikanPeminjaman', ['auth']);
+
+$router->post('/ruangan/create', 'AdminController', 'createRuangan', ['auth']);
+$router->post('/ruangan/{id}/update', 'AdminController', 'updateRuangan', ['auth']);
+$router->get('/ruangan/delete/{id}', 'AdminController', 'deleteRuangan', ['auth']);
+$router->get('/ruangan/change-status/{id}/{status}', 'AdminController', 'changeRuanganStatus', ['auth']);
 
 $router->dispatch();

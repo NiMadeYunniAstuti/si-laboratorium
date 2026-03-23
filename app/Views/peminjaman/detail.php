@@ -1,395 +1,272 @@
-<!DOCTYPE html>
-<html lang="id">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detail Peminjaman - LBMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
-</head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <img src="/images/logo.webp" alt="LBMS Logo">
-            </div>
-        </div>
+<?php
+$title = 'Detail Peminjaman - LBMS';
+$current_route = '/peminjaman';
+require_once __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../layouts/sidebar.php';
+require_once __DIR__ . '/../layouts/navbar.php';
 
-        <nav class="sidebar-menu">
-            <a href="/dashboard" class="sidebar-menu-item">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/users" class="sidebar-menu-item">
-                    <i class="bi bi-people"></i>
-                    Data User
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/alat" class="sidebar-menu-item">
-                    <i class="bi bi-wrench"></i>
-                    Manajemen Alat
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
-                <a href="/peminjaman" class="sidebar-menu-item active">
-                    <i class="bi bi-hand-index"></i>
-                    Peminjaman
-                </a>
-            <?php endif; ?>
-            <a href="/settings" class="sidebar-menu-item">
-                <i class="bi bi-gear"></i>
-                Settings
-            </a>
-        </nav>
+$status = $peminjamanDetail['status'] ?? 'PENDING';
+$statusColors = [
+    'PENDING' => 'warning',
+    'DISETUJUI' => 'info',
+    'DIPINJAM' => 'primary',
+    'SELESAI' => 'success',
+    'DIBATALKAN' => 'danger',
+    'TERLAMBAT' => 'secondary',
+    'DITOLAK' => 'danger'
+];
+$colorClass = $statusColors[$status] ?? 'secondary';
+?>
 
-        <div class="sidebar-footer">
-            <a href="/logout" class="sidebar-menu-item logout-item">
-                <i class="bi bi-box-arrow-right"></i>
-                Logout
-            </a>
-        </div>
-    </aside>
-
-    <!-- Top Navbar -->
-    <nav class="top-navbar" id="topNavbar">
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <div class="page-header px-0 mb-4">
         <div class="d-flex align-items-center">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <!-- Global Search -->
-            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
-                <select id="globalSearch" class="form-select" style="width: 100%;">
-                    <option value="">Cari</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="navbar-right">
-            <div class="d-flex align-items-center">
-                <!-- Notification Icon -->
-                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
-                    <i class="bi bi-bell"></i>
-                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= $unreadNotificationCount ?>
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    <?php endif; ?>
-                </a>
-
-                <!-- User Profile -->
-                <div class="user-profile">
-                    <div class="user-info text-end">
-                        <div class="user-name"><?= htmlspecialchars($user['name'] ?? 'Admin User') ?></div>
-                        <div class="user-role"><?= htmlspecialchars($user['role'] ?? 'ADMIN') ?></div>
-                    </div>
-                    <div class="user-avatar ms-2">
-                        <?= substr($user['name'] ?? 'Admin User', 0, 1) ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <div class="d-flex align-items-center mb-4">
-            <a href="/peminjaman" class="btn btn-outline-secondary me-3">
-                <i class="bi bi-arrow-left me-2"></i>Kembali
+            <a href="/peminjaman" class="btn btn-outline-primary btn-sm me-3">
+                <i class="bi bi-arrow-left"></i>
             </a>
-            <h1 class="mb-0">Detail Peminjaman</h1>
+            <div>
+                <h1 class="page-title">Detail Peminjaman</h1>
+                <p class="page-subtitle">Informasi lengkap transaksi peminjaman #<?= htmlspecialchars($peminjamanDetail['id'] ?? 'TRX') ?></p>
+            </div>
         </div>
+    </div>
 
-        <?php if (isset($error)): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <?= htmlspecialchars($error) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
+    <?php if (isset($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <?= htmlspecialchars($error) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <?= htmlspecialchars($success) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
+    <?php if (isset($success)): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <?= htmlspecialchars($success) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
 
-        <div class="row">
-            <!-- Peminjaman Info Card -->
-            <div class="col-md-4">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0">Informasi Peminjaman</h5>
+    <div class="row g-4">
+        <!-- Status & Overview -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="status-indicator mb-4">
+                        <div class="loan-icon mx-auto mb-3">
+                            <i class="bi bi-clipboard-check"></i>
+                        </div>
+                        <span class="badge bg-<?= $colorClass ?>-subtle text-<?= $colorClass ?> border border-<?= $colorClass ?>-subtle px-3 py-2 fs-6">
+                            <?= htmlspecialchars($status) ?>
+                        </span>
                     </div>
-                    <div class="card-body">
-                        <div class="text-center mb-3">
-                            <div class="loan-icon mb-3" style="font-size: 3rem; color: #3b82f6;">
-                                <i class="bi bi-clipboard-check"></i>
-                            </div>
-                            <h4>Peminjaman #<?= htmlspecialchars($peminjamanDetail['id'] ?? 'TRX001') ?></h4>
-                        </div>
+                    
+                    <h4 class="fw-bold mb-1">ID Transaksi</h4>
+                    <p class="text-muted mb-4">#<?= htmlspecialchars($peminjamanDetail['id'] ?? 'Unknown') ?></p>
 
-                        <div class="mb-3 text-center">
-                            <?php
-                            $status = $peminjamanDetail['status'] ?? 'PENDING';
-                            $statusColors = [
-                                'PENDING' => 'warning',
-                                'DISETUJUI' => 'info',
-                                'DIPINJAM' => 'primary',
-                                'SELESAI' => 'success',
-                                'DIBATALKAN' => 'danger',
-                                'TERLAMBAT' => 'secondary'
-                            ];
-                            $colorClass = $statusColors[$status] ?? 'secondary';
-                            ?>
-                            <span class="badge bg-<?= $colorClass ?> fs-6">
-                                <?= htmlspecialchars($status) ?>
-                            </span>
-                        </div>
+                    <hr class="my-4 opacity-50">
 
-                        <div class="d-grid gap-2">
+                    <div class="d-grid gap-2">
+                        <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
                             <?php if ($status === 'PENDING'): ?>
-                                <div class="btn-group" role="group" aria-label="Ubah status peminjaman">
-                                    <button type="button" class="btn btn-outline-success status-action" data-status="DIPINJAM">
-                                        <i class="bi bi-check-circle me-2"></i>Disetujui
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger status-action" data-status="DITOLAK">
-                                        <i class="bi bi-x-circle me-2"></i>Ditolak
-                                    </button>
-                                </div>
+                                <button type="button" class="btn btn-primary status-action" data-status="DIPINJAM">
+                                    <i class="bi bi-check-lg me-2"></i>Setujui Peminjaman
+                                </button>
+                                <button type="button" class="btn btn-outline-danger status-action" data-status="DITOLAK">
+                                    <i class="bi bi-x-lg me-2"></i>Tolak Peminjaman
+                                </button>
+                            <?php elseif ($status === 'DIPINJAM'): ?>
+                                <button type="button" class="btn btn-success status-action" data-status="SELESAI">
+                                    <i class="bi bi-arrow-return-left me-2"></i>Selesaikan (Kembali)
+                                </button>
                             <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Detail Peminjaman Card -->
-            <div class="col-md-8">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0">Detail Lengkap</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted">Status</label>
-                                    <p class="form-control-plaintext">
-                                        <span class="badge bg-<?= $colorClass ?>">
-                                            <?= htmlspecialchars($status) ?>
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted">Tanggal Ajukan</label>
-                                    <p class="form-control-plaintext"><?= date('d/m/Y H:i', strtotime($peminjamanDetail['created_at'] ?? 'now')) ?></p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted">Tanggal Pinjam</label>
-                                    <p class="form-control-plaintext"><?= date('d/m/Y', strtotime($peminjamanDetail['tanggal_pinjam'] ?? 'now')) ?></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label text-muted">Keterangan</label>
-                            <p class="form-control-plaintext">
-                                <?= nl2br(htmlspecialchars($peminjamanDetail['keterangan'] ?? '-')) ?>
-                            </p>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted">Tanggal Selesai</label>
-                                    <p class="form-control-plaintext">
-                                        <?php
-                                        if ($peminjamanDetail['tanggal_selesai'] ?? null) {
-                                            echo date('d/m/Y H:i', strtotime($peminjamanDetail['tanggal_selesai']));
-                                        } else {
-                                            echo '<span class="text-muted">-</span>';
-                                        }
-                                        ?>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
+                        
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                            <i class="bi bi-printer me-2"></i>Cetak Bukti
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-    </main>
+        <!-- Detail Information -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom border-light">
+                    <h5 class="mb-0 fw-bold text-primary">Informasi Peminjaman</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="info-label d-block text-muted small text-uppercase fw-bold mb-1">Peminjam</label>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-person"></i>
+                                </div>
+                                <span class="fw-semibold"><?= htmlspecialchars($peminjamanDetail['nama_peminjam'] ?? 'Unknown') ?></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="info-label d-block text-muted small text-uppercase fw-bold mb-1">Item Dipinjam</label>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                    <i class="bi <?= ($peminjamanDetail['item_type'] ?? '') === 'alat' ? 'bi-tools' : 'bi-door-open' ?>"></i>
+                                </div>
+                                <div>
+                                    <?php if (($peminjamanDetail['item_type'] ?? '') === 'alat'): ?>
+                                        <div class="fw-semibold"><?= htmlspecialchars($peminjamanDetail['nama_alat'] ?? 'Unknown') ?></div>
+                                        <small class="text-muted"><?= htmlspecialchars($peminjamanDetail['kode_alat'] ?? '-') ?></small>
+                                    <?php elseif (($peminjamanDetail['item_type'] ?? '') === 'ruangan'): ?>
+                                        <div class="fw-semibold"><?= htmlspecialchars($peminjamanDetail['nama_ruangan'] ?? 'Unknown') ?></div>
+                                        <small class="text-muted"><?= htmlspecialchars($peminjamanDetail['kode_ruangan'] ?? '-') ?></small>
+                                    <?php else: ?>
+                                        <div class="fw-semibold">Unknown</div>
+                                        <small class="text-muted">-</small>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="info-label d-block text-muted small text-uppercase fw-bold mb-1">Tanggal Pinjam</label>
+                            <div class="fw-medium">
+                                <i class="bi bi-calendar-event me-2 text-primary"></i>
+                                <?= date('d F Y', strtotime($peminjamanDetail['tanggal_pinjam'] ?? 'now')) ?>
+                                <span class="text-muted ms-1"><?= date('H:i', strtotime($peminjamanDetail['tanggal_pinjam'] ?? 'now')) ?></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="info-label d-block text-muted small text-uppercase fw-bold mb-1">Estimasi Kembali</label>
+                            <div class="fw-medium">
+                                <i class="bi bi-calendar-check me-2 text-warning"></i>
+                                <?= date('d F Y', strtotime($peminjamanDetail['tanggal_kembali'] ?? 'now')) ?>
+                                <span class="text-muted ms-1"><?= date('H:i', strtotime($peminjamanDetail['tanggal_kembali'] ?? 'now')) ?></span>
+                            </div>
+                        </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            function toggleSidebar() {
-                $('#sidebar').toggleClass('collapsed');
-                $('#topNavbar').toggleClass('sidebar-collapsed');
-                $('#mainContent').toggleClass('sidebar-collapsed');
+                        <?php if ($status === 'SELESAI'): ?>
+                        <div class="col-md-6">
+                            <label class="info-label d-block text-muted small text-uppercase fw-bold mb-1">Tanggal Dikembalikan</label>
+                            <div class="fw-medium text-success">
+                                <i class="bi bi-check-all me-2"></i>
+                                <?= date('d F Y H:i', strtotime($peminjamanDetail['updated_at'] ?? 'now')) ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
-                const isCollapsed = $('#sidebar').hasClass('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                        <div class="col-12">
+                            <label class="info-label d-block text-muted small text-uppercase fw-bold mb-1">Catatan / Keterangan</label>
+                            <div class="p-3 bg-light rounded border-start border-4 border-primary">
+                                <?= nl2br(htmlspecialchars($peminjamanDetail['catatan'] ?? $peminjamanDetail['keterangan'] ?? '-')) ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Trail / History -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom border-light">
+                    <h5 class="mb-0 fw-bold text-primary">Riwayat Status</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4 py-3">Waktu</th>
+                                    <th>Status</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-4 py-3 text-muted small"><?= date('d/m/Y H:i', strtotime($peminjamanDetail['created_at'] ?? 'now')) ?></td>
+                                    <td><span class="badge bg-warning-subtle text-warning">PENDING</span></td>
+                                    <td class="small">Pengajuan dibuat oleh peminjam</td>
+                                </tr>
+                                <?php if ($status !== 'PENDING'): ?>
+                                <tr>
+                                    <td class="ps-4 py-3 text-muted small"><?= date('d/m/Y H:i', strtotime($peminjamanDetail['updated_at'] ?? 'now')) ?></td>
+                                    <td><span class="badge bg-<?= $colorClass ?>-subtle text-<?= $colorClass ?>"><?= $status ?></span></td>
+                                    <td class="small">Status diperbarui oleh sistem/admin</td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+
+<script>
+    $(document).ready(function() {
+        $('.status-action').on('click', function() {
+            const status = $(this).data('status');
+            const id = '<?= $peminjamanDetail['id'] ?? '' ?>';
+            let action = '';
+            let method = 'POST';
+            
+            if (status === 'DIPINJAM') action = 'proses';
+            else if (status === 'DITOLAK') action = 'tolak';
+            else if (status === 'SELESAI') {
+                action = 'selesaikan';
             }
 
-            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (sidebarCollapsed) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
+            if (!action) return;
+
+            let payload = null;
+            if (status === 'DITOLAK') {
+                const alasan = prompt('Alasan penolakan (opsional):') || 'Peminjaman ditolak';
+                if (!confirm('Apakah Anda yakin ingin menolak peminjaman ini?')) return;
+                payload = { alasan };
+            } else {
+                if (!confirm(`Apakah Anda yakin ingin memproses peminjaman ini ke status ${status}?`)) return;
             }
 
-            $('#sidebarToggle').on('click', function(e) {
-                e.stopPropagation();
-                toggleSidebar();
-            });
-
-            $('.status-action').on('click', function() {
-                const status = $(this).data('status');
-                const id = '<?= $peminjamanDetail['id'] ?? '' ?>';
-                const action = status === 'DIPINJAM' ? 'proses' : 'tolak';
-                let payload = null;
-
-                if (status === 'DIPINJAM') {
-                    if (!confirm('Apakah Anda yakin ingin menyetujui peminjaman ini?')) {
-                        return;
-                    }
-                } else {
-                    const alasan = prompt('Alasan penolakan (opsional):') || 'Peminjaman ditolak';
-                    if (!confirm('Apakah Anda yakin ingin menolak peminjaman ini?')) {
-                        return;
-                    }
-                    payload = { alasan };
+            fetch(`/peminjaman/${id}/${action}`, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: payload ? JSON.stringify(payload) : null
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                    return;
                 }
-
-                fetch(`/peminjaman/${id}/${action}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload ? JSON.stringify(payload) : null
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                            return;
-                        }
-                        alert(data.message || 'Gagal memperbarui status peminjaman');
-                    })
-                    .catch(() => {
-                        alert('Terjadi kesalahan saat memperbarui status peminjaman');
-                    });
+                alert(data.message || 'Gagal memperbarui status peminjaman');
+            })
+            .catch(() => {
+                alert('Terjadi kesalahan saat memperbarui status peminjaman');
             });
-
-            if ($(window).width() <= 768) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
         });
-    </script>
+    });
+</script>
 
-    <style>
-        .timeline {
-            position: relative;
-            padding-left: 30px;
-        }
-
-        .timeline-item {
-            position: relative;
-            margin-bottom: 20px;
-            padding-left: 20px;
-        }
-
-        .timeline-marker {
-            position: absolute;
-            left: -15px;
-            top: 5px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            box-shadow: 0 0 0 4px rgba(0,0,0,0.1);
-        }
-
-        .timeline-content {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 5px;
-            border-left: 3px solid #dee2e6;
-        }
-
-        .loan-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto;
-        }
-    </style>
-
-    <script>
-        $(document).ready(function() {
-            const $search = $('#globalSearch');
-            if (!$search.length || !$.fn.select2) {
-                return;
-            }
-
-            const searchItems = [
-                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
-                { id: 'users', text: 'Users', url: '/users' },
-                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
-                { id: 'alat', text: 'Alat', url: '/alat' },
-                { id: 'profile', text: 'Profile', url: '/settings/profile' },
-{ id: 'notifications', text: 'Notifications', url: '/notifications' },
-            ];
-
-            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
-            const filteredSearchItems = searchItems.filter(item => {
-                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
-                    return false;
-                }
-                return true;
-            });
-
-            $search.select2({
-                theme: 'bootstrap-5',
-                width: '100%',
-                placeholder: 'Cari',
-                allowClear: true,
-                data: filteredSearchItems
-            });
-
-            $search.on('select2:select', function(e) {
-                const url = e.params.data && e.params.data.url;
-                if (url) {
-                    window.location.href = url;
-                }
-            });
-        });
-    </script>
-
+<style>
+    .loan-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
+        color: white;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+    }
+    
+    .avatar-sm {
+        flex-shrink: 0;
+    }
+</style>
 </body>
 </html>

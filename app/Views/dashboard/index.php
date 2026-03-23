@@ -1,523 +1,216 @@
-<!DOCTYPE html>
-<html lang="id">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - LBMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <!-- DataTables CSS removed - not needed for dashboard table -->
-    <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
-    <style>
-        /* Minimal custom styles - using Bootstrap 5.3 components */
-        .actions-container {
-            margin-bottom: 2rem;
-            padding: 0 2rem;
-        }
+<?php
+$title = 'Dashboard - LBMS';
+$current_route = '/dashboard';
+require_once __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../layouts/sidebar.php';
+require_once __DIR__ . '/../layouts/navbar.php';
+?>
 
-        /* Table responsive styles */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        #dashboardTable {
-            margin-bottom: 0;
-        }
-
-        #dashboardTable th {
-            white-space: nowrap;
-            font-weight: 600;
-            font-size: 0.875rem;
-            background-color: #f8f9fa;
-        }
-
-        #dashboardTable td {
-            white-space: nowrap;
-            vertical-align: middle;
-        }
-
-        /* Action buttons responsive */
-        .action-buttons {
-            min-width: 120px;
-        }
-
-        .btn-group .btn {
-            min-width: auto;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-        }
-
-        .btn-group-sm .btn {
-            padding: 0.125rem 0.25rem;
-            font-size: 0.7rem;
-        }
-
-        /* Mobile optimization */
-        @media (max-width: 768px) {
-            .table-responsive {
-                border: 1px solid #dee2e6;
-                border-radius: 0.375rem;
-            }
-
-            #dashboardTable th,
-            #dashboardTable td {
-                padding: 0.5rem 0.25rem;
-                font-size: 0.75rem;
-            }
-
-            .badge {
-                font-size: 0.625rem;
-                padding: 0.25rem 0.5rem;
-            }
-        }
-
-        /* Ensure proper scrolling on all devices */
-        .table-responsive::-webkit-scrollbar {
-            height: 8px;
-        }
-
-        .table-responsive::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .table-responsive::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-
-        .table-responsive::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-    </style>
-</head>
-<body>
-        <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <img src="/images/logo.webp" alt="LBMS Logo">
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <div class="welcome-banner p-4 p-lg-5 mb-4 rounded-4 shadow-sm text-white" style="background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-6 fw-bold mb-2">Selamat Datang, <?= htmlspecialchars($user['nama'] ?? 'User') ?>! 👋</h1>
+                <p class="lead mb-0 opacity-75">Kelola aset dan pantau aktivitas peminjaman laboratorium dengan mudah dalam satu dashboard.</p>
+            </div>
+            <div class="col-lg-4 d-none d-lg-block text-end">
+                <i class="bi bi-rocket-takeoff display-1 opacity-25"></i>
             </div>
         </div>
+    </div>
 
-        <nav class="sidebar-menu">
-            <a href="/dashboard" class="sidebar-menu-item active">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/users" class="sidebar-menu-item">
-                    <i class="bi bi-people"></i>
-                    Data User
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/alat" class="sidebar-menu-item">
-                    <i class="bi bi-wrench"></i>
-                    Manajemen Alat
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
-                <a href="/peminjaman" class="sidebar-menu-item">
-                    <i class="bi bi-hand-index"></i>
-                    Peminjaman
-                </a>
-            <?php endif; ?>
-            <a href="/settings" class="sidebar-menu-item">
-                <i class="bi bi-gear"></i>
-                Settings
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <a href="/logout" class="sidebar-menu-item logout-item">
-                <i class="bi bi-box-arrow-right"></i>
-                Logout
-            </a>
-        </div>
-    </aside>
-
-        <nav class="top-navbar" id="topNavbar">
-        <div class="d-flex align-items-center">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <!-- Global Search -->
-            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
-                <select id="globalSearch" class="form-select" style="width: 100%;">
-                    <option value="">Cari</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="navbar-right">
-            <div class="d-flex align-items-center">
-                <!-- Notification Icon -->
-                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
-                    <i class="bi bi-bell"></i>
-                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= $unreadNotificationCount ?>
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    <?php endif; ?>
-                </a>
-
-                <!-- User Profile -->
-                <div class="user-profile">
-                    <div class="user-info text-end">
-                        <div class="user-name"><?= htmlspecialchars($user['name'] ?? 'Admin User') ?></div>
-                        <div class="user-role"><?= htmlspecialchars($user['role'] ?? 'Admin') ?></div>
+    <!-- Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 stat-card-hover transition-all">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning-subtle text-warning rounded-3 p-3 me-3">
+                            <i class="bi bi-hourglass-split fs-3"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium text-uppercase ls-1">Pending</div>
+                            <h3 class="fw-bold mb-0 mt-1"><?= $stats['pending'] ?? 0 ?></h3>
+                        </div>
                     </div>
-                    <div class="user-avatar ms-2">
-                        <?= substr($user['name'] ?? 'Admin User', 0, 1) ?>
+                    <div class="small">
+                        <span class="text-warning fw-semibold">Butuh Review</span>
+                        <span class="text-muted ms-1">peminjaman baru</span>
                     </div>
                 </div>
             </div>
         </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <h1 class="display-4 fw-bold mb-4">Dashboard</h1>
-
-        <!-- Statistics -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="bi bi-box"></i>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 stat-card-hover transition-all">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success-subtle text-success rounded-3 p-3 me-3">
+                            <i class="bi bi-check-circle-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium text-uppercase ls-1">Selesai</div>
+                            <h3 class="fw-bold mb-0 mt-1"><?= $stats['selesai'] ?? 0 ?></h3>
+                        </div>
+                    </div>
+                    <div class="small">
+                        <span class="text-success fw-semibold">Telah Kembali</span>
+                        <span class="text-muted ms-1">total transaksi</span>
+                    </div>
                 </div>
-                <div class="stat-number">0</div>
-                <div class="stat-label">Peminjaman Pending</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-                <div class="stat-number">0</div>
-                <div class="stat-label">Peminjaman Selesai</div>
-            </div>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="bi bi-people"></i>
-                </div>
-                <div class="stat-number">0</div>
-                <div class="stat-label">Total User</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-                <div class="stat-number">0</div>
-                <div class="stat-label">Total Selesai</div>
-            </div>
-            <?php endif; ?>
         </div>
+        <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 stat-card-hover transition-all">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary-subtle text-primary rounded-3 p-3 me-3">
+                            <i class="bi bi-people-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium text-uppercase ls-1">User</div>
+                            <h3 class="fw-bold mb-0 mt-1"><?= $stats['users'] ?? 0 ?></h3>
+                        </div>
+                    </div>
+                    <div class="small">
+                        <span class="text-primary fw-semibold">Terdaftar</span>
+                        <span class="text-muted ms-1">pengguna aktif</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 stat-card-hover transition-all">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info-subtle text-info rounded-3 p-3 me-3">
+                            <i class="bi bi-box-seam-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small fw-medium text-uppercase ls-1">Total Alat</div>
+                            <h3 class="fw-bold mb-0 mt-1"><?= $stats['alat'] ?? 0 ?></h3>
+                        </div>
+                    </div>
+                    <div class="small">
+                        <span class="text-info fw-semibold">Inventaris</span>
+                        <span class="text-muted ms-1">tersedia di lab</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
 
-        <?php if (isset($error)): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <?= htmlspecialchars($error) ?>
+    <?php if (isset($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show mb-4 border-0 shadow-sm" role="alert">
+            <div class="d-flex">
+                <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1">Terjadi Kesalahan</h6>
+                    <span><?= htmlspecialchars($error) ?></span>
+                </div>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
 
     <?php if (isset($success)): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            <?= htmlspecialchars($success) ?>
+        <div class="alert alert-success alert-dismissible fade show mb-4 border-0 shadow-sm" role="alert">
+            <div class="d-flex">
+                <i class="bi bi-check-circle-fill me-2 mt-1"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold mb-1">Berhasil</h6>
+                    <span><?= htmlspecialchars($success) ?></span>
+                </div>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
 
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h5 class="mb-0">Peminjaman Terbaru</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                    <table id="dashboardTable" class="table table-striped table-hover" style="min-width: 800px;">
-                        <thead>
-                            <tr>
-                                <th>NO</th>
-                                <th>NAMA PEMINJAM</th>
-                                <th>ITEM</th>
-                                <th>TANGGAL PINJAM</th>
-                                <th>TANGGAL BERAKHIR</th>
-                                <th>STATUS</th>
-                                <th>ACTION</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (!empty($recentPeminjaman)): ?>
-                                <?php foreach ($recentPeminjaman as $index => $peminjaman): ?>
-                                    <tr>
-                                        <td><?php echo $index + 1; ?></td>
-                                        <td><?php echo htmlspecialchars($peminjaman['nama_peminjam'] ?? $peminjaman['user_name'] ?? '-'); ?></td>
-                                        <td><?php echo htmlspecialchars($peminjaman['nama_alat'] ?? 'Unknown'); ?></td>
-                                        <td><?php echo date('d-m-Y', strtotime($peminjaman['tanggal_pinjam'] ?? 'now')); ?></td>
-                                        <td><?php echo date('d-m-Y', strtotime($peminjaman['tanggal_kembali'] ?? 'now')); ?></td>
-                                        <td>
-                                            <?php
-                                            $status = strtoupper($peminjaman['status'] ?? 'UNKNOWN');
-                                            $badgeClass = 'bg-secondary';
-                                            switch ($status) {
-                                                case 'PENDING':
-                                                    $badgeClass = 'bg-warning';
-                                                    break;
-                                                case 'DIPINJAM':
-                                                    $badgeClass = 'bg-info';
-                                                    break;
-                                                case 'SELESAI':
-                                                    $badgeClass = 'bg-success';
-                                                    break;
-                                                case 'DITOLAK':
-                                                    $badgeClass = 'bg-danger';
-                                                    break;
-                                            }
-                                            ?>
-                                            <span class="badge <?php echo $badgeClass; ?>">
-                                                <?php echo htmlspecialchars($status); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                            <?php if ($status === 'PENDING'): ?>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    <a href="/peminjaman/<?php echo $peminjaman['id']; ?>/detail"
-                                                       class="btn btn-outline-primary" title="Detail">
-                                                        <i class="bi bi-eye me-1"></i>Detail
-                                                    </a>
-                                                    <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-outline-success"
-                                                                onclick="prosesPeminjaman(<?php echo $peminjaman['id']; ?>)"
-                                                                title="Proses">
-                                                            <i class="bi bi-check-circle me-1"></i>Setujui
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-danger"
-                                                                onclick="tolakPeminjaman(<?php echo $peminjaman['id']; ?>)"
-                                                                title="Tolak">
-                                                            <i class="bi bi-x-circle me-1"></i>Tolak
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            <?php elseif ($status === 'DITOLAK' || $status === 'SELESAI'): ?>
-                                                <a href="/peminjaman/<?php echo $peminjaman['id']; ?>/detail"
-                                                   class="btn btn-sm btn-outline-primary" title="Detail">
-                                                    <i class="bi bi-eye me-1"></i>Detail
-                                                </a>
-                                            <?php else: ?>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    <a href="/peminjaman/<?php echo $peminjaman['id']; ?>/detail"
-                                                       class="btn btn-outline-primary" title="Detail">
-                                                        <i class="bi bi-eye me-1"></i>Detail
-                                                    </a>
-                                                    <?php if ($status === 'DIPINJAM'): ?>
-                                                        <button type="button" class="btn btn-outline-success"
-                                                                onclick="selesaikanPeminjaman(<?php echo $peminjaman['id']; ?>)"
-                                                                title="Selesaikan">
-                                                            <i class="bi bi-check2-circle me-1"></i>Selesaikan
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr class="empty-state-row">
-                                    <td class="text-center text-muted py-4" colspan="8">
-                                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                                        Belum ada data peminjaman
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 border-bottom-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Peminjaman Terbaru</h5>
+                <a href="/peminjaman" class="btn btn-sm btn-link text-primary fw-semibold text-decoration-none p-0">
+                    Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
+                </a>
             </div>
         </div>
-    </main>
+        <div class="card-body pt-0">
+            <div class="table-responsive">
+                <table id="dashboardTable" class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center py-3">NO</th>
+                            <th class="py-3">NAMA PEMINJAM</th>
+                            <th class="py-3">ITEM</th>
+                            <th class="py-3">TANGGAL PINJAM</th>
+                            <th class="py-3">TANGGAL KEMBALI</th>
+                            <th class="py-3">STATUS</th>
+                            <th class="text-center py-3">AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($recentPeminjaman)): ?>
+                            <?php foreach ($recentPeminjaman as $index => $peminjaman): ?>
+                                <tr>
+                                    <td class="text-center"><?= $index + 1 ?></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm rounded-circle bg-light text-primary d-flex align-items-center justify-content-center me-2 fw-bold" style="width: 32px; height: 32px; font-size: 0.75rem;">
+                                                <?= strtoupper(substr($peminjaman['nama_peminjam'] ?? $peminjaman['user_name'] ?? 'U', 0, 1)); ?>
+                                            </div>
+                                            <span class="fw-medium text-dark"><?= htmlspecialchars($peminjaman['nama_peminjam'] ?? $peminjaman['user_name'] ?? '-'); ?></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-dark fw-semibold"><?= htmlspecialchars($peminjaman['nama_alat'] ?? 'Unknown'); ?></div>
+                                        <small class="text-muted">Laboratorium</small>
+                                    </td>
+                                    <td><?= date('d M Y', strtotime($peminjaman['tanggal_pinjam'] ?? 'now')); ?></td>
+                                    <td><?= date('d M Y', strtotime($peminjaman['tanggal_kembali'] ?? 'now')); ?></td>
+                                    <td>
+                                        <?php
+                                        $status = strtoupper($peminjaman['status'] ?? 'UNKNOWN');
+                                        $badgeClass = match($status) {
+                                            'PENDING' => 'warning',
+                                            'DIPINJAM' => 'info',
+                                            'SELESAI' => 'success',
+                                            'DITOLAK' => 'danger',
+                                            default => 'secondary'
+                                        };
+                                        ?>
+                                        <span class="badge bg-<?= $badgeClass ?>-subtle text-<?= $badgeClass ?> border border-<?= $badgeClass ?>-subtle rounded-pill px-3">
+                                            <?= $status ?>
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="/peminjaman/<?= $peminjaman['id']; ?>/detail"
+                                           class="btn btn-icon btn-sm btn-outline-primary rounded-circle" title="Detail">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td class="text-center text-muted py-5" colspan="7">
+                                    <div class="empty-state py-4">
+                                        <i class="bi bi-inbox display-4 d-block mb-3 text-light-emphasis"></i>
+                                        <h6 class="fw-bold mb-1">Data Kosong</h6>
+                                        <p class="small mb-0">Belum ada data peminjaman terbaru untuk saat ini.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <!-- DataTables removed - not needed for dashboard table -->
-      <script>
-        $(document).ready(function() {
-            function toggleSidebar() {
-                $('#sidebar').toggleClass('collapsed');
-                $('#topNavbar').toggleClass('sidebar-collapsed');
-                $('#mainContent').toggleClass('sidebar-collapsed');
-
-                const isCollapsed = $('#sidebar').hasClass('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
-            }
-
-            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (sidebarCollapsed) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
-
-            $('#sidebarToggle').on('click', function(e) {
-                e.stopPropagation();
-                toggleSidebar();
-            });
-
-            if ($(window).width() <= 768) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
-
-            $(window).on('resize', function() {
-                if ($(window).width() > 768) {
-                    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-                    if (!sidebarCollapsed) {
-                        $('#sidebar').removeClass('collapsed');
-                        $('#topNavbar').removeClass('sidebar-collapsed');
-                        $('#mainContent').removeClass('sidebar-collapsed');
-                    }
-                } else {
-                    $('#sidebar').addClass('collapsed', 'mobile-active');
-                    $('#topNavbar').addClass('sidebar-collapsed');
-                    $('#mainContent').addClass('sidebar-collapsed');
-                }
-            });
-
-            $('form[action="/logout"]').on('submit', function(e) {
-                if (!confirm('Apakah Anda yakin ingin keluar?')) {
-                    e.preventDefault();
-                }
-            });
-
-            console.log('Dashboard loaded successfully - DataTables disabled for better compatibility');
-
-            console.log('Dashboard loaded successfully');
-        });
-
-        function prosesPeminjaman(id) {
-            if (confirm('Apakah Anda yakin ingin menyetujui peminjaman ini?')) {
-                fetch(`/peminjaman/${id}/proses`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Gagal memproses peminjaman: ' + (data.message || 'Terjadi kesalahan'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Terjadi kesalahan saat memproses peminjaman');
-                });
-            }
-        }
-
-        function tolakPeminjaman(id) {
-            const alasan = prompt('Alasan penolakan:');
-            if (alasan !== null) {
-                fetch(`/peminjaman/${id}/tolak`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        alasan: alasan
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Gagal menolak peminjaman: ' + (data.message || 'Terjadi kesalahan'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Terjadi kesalahan saat menolak peminjaman');
-                });
-            }
-        }
-
-        function selesaikanPeminjaman(id) {
-            if (confirm('Apakah Anda yakin ingin menyelesaikan peminjaman ini?')) {
-                fetch(`/peminjaman/${id}/selesaikan`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Gagal menyelesaikan peminjaman: ' + (data.message || 'Terjadi kesalahan'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Terjadi kesalahan saat menyelesaikan peminjaman');
-                });
-            }
-        }
-    </script>
-
-    <script>
-        $(document).ready(function() {
-            const $search = $('#globalSearch');
-            if (!$search.length || !$.fn.select2) {
-                return;
-            }
-
-            const searchItems = [
-                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
-                { id: 'users', text: 'Users', url: '/users' },
-                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
-                { id: 'alat', text: 'Alat', url: '/alat' },
-                { id: 'profile', text: 'Profile', url: '/settings/profile' },
-{ id: 'notifications', text: 'Notifications', url: '/notifications' },
-            ];
-
-            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
-            const filteredSearchItems = searchItems.filter(item => {
-                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
-                    return false;
-                }
-                return true;
-            });
-
-            $search.select2({
-                theme: 'bootstrap-5',
-                width: '100%',
-                placeholder: 'Cari',
-                allowClear: true,
-                data: filteredSearchItems
-            });
-
-            $search.on('select2:select', function(e) {
-                const url = e.params.data && e.params.data.url;
-                if (url) {
-                    window.location.href = url;
-                }
-            });
-        });
-    </script>
-
+<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 </body>
 </html>

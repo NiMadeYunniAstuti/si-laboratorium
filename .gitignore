@@ -24,6 +24,25 @@ claude-code/
 ai-assistant/
 copilot/
 .claude/
+.opencode/
+.omc/
+.sisyphus/
+CLAUDE.md
+AGENTS.md
+**/AGENTS.md
+.cursorrules
+.cursorignore
+.cursor/
+.windsurf/
+.aider*
+.continue/
+.codeium/
+.tabnine/
+.sourcegraph/
+test-results/
+tests/
+e2e-*.png
+ruangan_list.md
 
 node_modules/
 vendor/

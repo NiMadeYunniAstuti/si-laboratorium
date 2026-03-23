@@ -10,8 +10,8 @@ class AdminController extends BaseController
     private $peminjamanModel;
     private $userModel;
     private $kategoriModel;
-    private $tipeAlatModel;
     private $notifikasiModel;
+
 
     public function __construct()
     {
@@ -21,8 +21,8 @@ class AdminController extends BaseController
         $this->peminjamanModel = new PeminjamanModel();
         $this->userModel = new UserModel();
         $this->kategoriModel = new KategoriModel();
-        $this->tipeAlatModel = new TipeAlatModel();
         $this->notifikasiModel = new NotifikasiModel();
+
     }
 
     /**
@@ -285,39 +285,71 @@ class AdminController extends BaseController
         }
 
         $userId = $_SESSION['user_id'];
+        $email = trim($_POST['email'] ?? '');
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword = $_POST['new_password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
 
         try {
+            // Handle email update if provided
+            $emailUpdated = false;
+            if (!empty($email)) {
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $_SESSION['error'] = 'Email tidak valid';
+                    $this->redirect('/settings/privacy-security');
+                    return;
+                }
+
+                if ($this->userModel->emailExists($email, $userId)) {
+                    $_SESSION['error'] = 'Email sudah digunakan oleh pengguna lain';
+                    $this->redirect('/settings/privacy-security');
+                    return;
+                }
+
+                if ($this->userModel->update($userId, ['email' => strtolower($email)])) {
+                    $_SESSION['user_email'] = strtolower($email);
+                    $emailUpdated = true;
+                }
+            }
+
+            // If no password fields filled, just return after email update
+            if (empty($currentPassword) && empty($newPassword) && empty($confirmPassword)) {
+                if ($emailUpdated) {
+                    $_SESSION['success'] = 'Email berhasil diperbarui';
+                }
+                $this->redirect('/settings/privacy-security');
+                return;
+            }
+
+            // Validate password fields
             if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
-                $_SESSION['error'] = 'Semua field harus diisi';
-                $this->redirect('/dashboard/profile');
-                return;
-            }
-
-            if ($newPassword !== $confirmPassword) {
-                $_SESSION['error'] = 'Password baru dan konfirmasi tidak cocok';
-                $this->redirect('/dashboard/profile');
-                return;
-            }
-
-            if (empty($newPassword)) {
-                $_SESSION['error'] = 'Password baru tidak boleh kosong';
-                $this->redirect('/dashboard/profile');
+                $_SESSION['error'] = 'Semua field password harus diisi';
+                $this->redirect('/settings/privacy-security');
                 return;
             }
 
             $user = $this->userModel->find($userId);
             if (!$user) {
                 $_SESSION['error'] = 'Pengguna tidak ditemukan';
-                $this->redirect('/dashboard/profile');
+                $this->redirect('/settings/privacy-security');
                 return;
             }
 
             if (!password_verify($currentPassword, $user['password_hash'])) {
                 $_SESSION['error'] = 'Password saat ini tidak benar';
-                $this->redirect('/dashboard/profile');
+                $this->redirect('/settings/privacy-security');
+                return;
+            }
+
+            if (strlen($newPassword) < 8) {
+                $_SESSION['error'] = 'Password baru minimal 8 karakter';
+                $this->redirect('/settings/privacy-security');
+                return;
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                $_SESSION['error'] = 'Password baru dan konfirmasi password tidak cocok';
+                $this->redirect('/settings/privacy-security');
                 return;
             }
 
@@ -332,7 +364,7 @@ class AdminController extends BaseController
             $_SESSION['error'] = 'Terjadi kesalahan saat mengubah password';
         }
 
-        $this->redirect('/dashboard/profile');
+        $this->redirect('/settings/privacy-security');
     }
 
     /**
@@ -376,6 +408,8 @@ class AdminController extends BaseController
      */
     public function createUser()
     {
+        $this->requireAdmin();
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/users');
             return;
@@ -571,11 +605,7 @@ class AdminController extends BaseController
      */
     public function dataUsers()
     {
-        if (!$this->isLoggedIn()) {
-            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
-            $this->redirect('/login');
-            return;
-        }
+        $this->requireAdmin();
 
         try {
             $result = $this->userModel->getUsersPaginated(1, 1000); 
@@ -649,11 +679,9 @@ class AdminController extends BaseController
 
         try {
             $kategoriList = $this->alatModel->getAllKategori();
-            $tipeList = $this->alatModel->getAllTipe();
         } catch (Exception $e) {
-            error_log("Error fetching kategori/tipe data: " . $e->getMessage());
+            error_log("Error fetching kategori data: " . $e->getMessage());
             $kategoriList = [];
-            $tipeList = [];
         }
 
         $oldInput = $_SESSION['old_input'] ?? [];
@@ -666,7 +694,6 @@ class AdminController extends BaseController
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
             'kategoriList' => $kategoriList,
-            'tipeList' => $tipeList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null,
             'oldInput' => $oldInput  
@@ -729,11 +756,9 @@ class AdminController extends BaseController
 
         try {
             $kategoriList = $this->alatModel->getAllKategori();
-            $tipeList = $this->alatModel->getAllTipe();
         } catch (Exception $e) {
-            error_log("Error fetching kategori/tipe data: " . $e->getMessage());
+            error_log("Error fetching kategori data: " . $e->getMessage());
             $kategoriList = [];
-            $tipeList = [];
         }
 
         $data = [
@@ -745,7 +770,6 @@ class AdminController extends BaseController
             ],
             'alatDetail' => $alatData,
             'kategoriList' => $kategoriList,
-            'tipeList' => $tipeList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null
         ];
@@ -761,11 +785,7 @@ class AdminController extends BaseController
      */
     public function newUser()
     {
-        if (!$this->isLoggedIn()) {
-            $_SESSION['error'] = 'Anda harus login untuk mengakses halaman ini';
-            $this->redirect('/login');
-            return;
-        }
+        $this->requireAdmin();
 
         $data = [
             'title' => 'Tambah User Baru - LBMS',
@@ -789,6 +809,8 @@ class AdminController extends BaseController
      */
     public function editUser($id)
     {
+        $this->requireAdmin();
+
         $userData = $this->userModel->getUserDetails($id);
 
         if (!$userData) {
@@ -820,6 +842,8 @@ class AdminController extends BaseController
      */
     public function detailUser($id)
     {
+        $this->requireAdmin();
+
         $userData = $this->userModel->getUserDetails($id);
 
         if (!$userData) {
@@ -972,8 +996,8 @@ class AdminController extends BaseController
         $this->requireAdmin();
 
         // Check for active loans before deleting
-        $activeLoans = $this->peminjamanModel->getPeminjamanByAlat($id, 'DIPINJAM');
-        $pendingLoans = $this->peminjamanModel->getPeminjamanByAlat($id, 'PENDING');
+        $activeLoans = $this->peminjamanModel->getPeminjamanByItem($id, 'alat', 'DIPINJAM');
+        $pendingLoans = $this->peminjamanModel->getPeminjamanByItem($id, 'alat', 'PENDING');
         if (!empty($activeLoans) || !empty($pendingLoans)) {
             $_SESSION['error'] = 'Alat tidak dapat dihapus karena sedang dipinjam';
             $this->redirect('/alat');
@@ -1123,7 +1147,6 @@ class AdminController extends BaseController
                 'role' => $_SESSION['user_role'] ?? 'ADMIN'
             ],
             'kategoriList' => $kategoriList,
-            'tipeList' => $tipeList,
             'error' => $_SESSION['error'] ?? null,
             'success' => $_SESSION['success'] ?? null,
             'oldInput' => $oldInput
@@ -1468,10 +1491,8 @@ class AdminController extends BaseController
      */
     public function detailPeminjaman($id)
     {
-        $userRole = $_SESSION['user_role'] ?? 'USER';
-        if ($userRole !== 'ADMIN') {
-            $_SESSION['error'] = 'Anda tidak memiliki akses ke halaman detail peminjaman';
-            $this->redirect('/peminjaman');
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/login');
             return;
         }
 
@@ -1479,6 +1500,16 @@ class AdminController extends BaseController
 
         if (!$peminjamanDetail) {
             $_SESSION['error'] = 'Data peminjaman tidak ditemukan';
+            $this->redirect('/peminjaman');
+            return;
+        }
+
+        $userRole = $_SESSION['user_role'] ?? 'USER';
+        $userId = $_SESSION['user_id'] ?? null;
+
+        // Regular users can only view their own peminjaman
+        if ($userRole !== 'ADMIN' && $peminjamanDetail['user_id'] != $userId) {
+            $_SESSION['error'] = 'Anda tidak memiliki akses ke peminjaman ini';
             $this->redirect('/peminjaman');
             return;
         }
@@ -1520,50 +1551,50 @@ class AdminController extends BaseController
                 $alatId = $_POST['alat_id'] ?? null;
                 $ruanganId = $_POST['ruangan_id'] ?? null;
 
-                $data = [
-                    'user_id' => $userId,
-                    'nama_peminjam' => $_POST['nama_peminjam'] ?? $_SESSION['user_name'] ?? 'User',
-                    'alat_id' => !empty($alatId) ? $alatId : null,
-                    'ruangan_id' => !empty($ruanganId) ? $ruanganId : null,
-                    'tanggal_pinjam' => $_POST['tanggal_pinjam'] ?? '',
-                    'tanggal_kembali' => $_POST['tanggal_kembali'] ?? '',
-                    'keterangan' => $_POST['catatan'] ?? '',
-                    'status' => 'PENDING'
-                ];
+                $namaPeminjam = $_POST['nama_peminjam'] ?? $_SESSION['user_name'] ?? 'User';
 
-                $namaPeminjam = $data['nama_peminjam'];
-
-                // Determine item type for validation and notifications
+                // Determine item type and ID
                 $itemType = '';
                 $itemId = null;
 
                 if ($jenisItem === 'alat') {
-                    if (empty($data['alat_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
+                    if (empty($alatId) || empty($_POST['tanggal_pinjam']) || empty($_POST['tanggal_kembali'])) {
                         $_SESSION['error'] = 'Semua field wajib diisi';
                         $this->redirect('/peminjaman/new');
                         return;
                     }
-                    $itemType = 'Alat';
-                    $itemId = $data['alat_id'];
+                    $itemType = 'alat';
+                    $itemId = $alatId;
                 } elseif ($jenisItem === 'ruangan') {
-                    if (empty($data['ruangan_id']) || empty($data['tanggal_pinjam']) || empty($data['tanggal_kembali'])) {
+                    if (empty($ruanganId) || empty($_POST['tanggal_pinjam']) || empty($_POST['tanggal_kembali'])) {
                         $_SESSION['error'] = 'Semua field wajib diisi';
                         $this->redirect('/peminjaman/new');
                         return;
                     }
-                    $itemType = 'Ruangan';
-                    $itemId = $data['ruangan_id'];
+                    $itemType = 'ruangan';
+                    $itemId = $ruanganId;
                 } else {
                     $_SESSION['error'] = 'Jenis item tidak valid';
                     $this->redirect('/peminjaman/new');
                     return;
                 }
 
+                $data = [
+                    'user_id' => $userId,
+                    'nama_peminjam' => $namaPeminjam,
+                    'item_type' => $itemType,
+                    'item_id' => $itemId,
+                    'tanggal_pinjam' => $_POST['tanggal_pinjam'] ?? '',
+                    'tanggal_kembali' => $_POST['tanggal_kembali'] ?? '',
+                    'keterangan' => $_POST['catatan'] ?? '',
+                    'status' => 'PENDING'
+                ];
+
                 $peminjamanId = $this->peminjamanModel->createPeminjaman($data);
                 if ($peminjamanId) {
                     $peminjaman = $this->peminjamanModel->getPeminjamanDetails($peminjamanId);
                     if ($peminjaman) {
-                        $itemName = $peminjaman['nama_alat'] ?? $itemType;
+                        $itemName = $peminjaman['nama_alat'] ?? $peminjaman['nama_ruangan'] ?? $itemType;
                         $this->notifikasiModel->createNotification(
                             'Pengajuan Peminjaman Dikirim',
                             "Pengajuan peminjaman {$itemName} berhasil dikirim dan menunggu persetujuan",
@@ -1600,6 +1631,8 @@ class AdminController extends BaseController
      */
     public function updatePeminjamanStatus($id)
     {
+        $this->requireAdmin();
+
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $status = $_POST['status'] ?? '';
@@ -1630,6 +1663,8 @@ class AdminController extends BaseController
      */
     public function kembalikanPeminjaman($id)
     {
+        $this->requireAdmin();
+
         try {
             if ($this->peminjamanModel->kembalikan($id)) {
                 $_SESSION['success'] = 'Alat berhasil dikembalikan';
@@ -1648,6 +1683,8 @@ class AdminController extends BaseController
      */
     public function batalkanPeminjaman($id)
     {
+        $this->requireAdmin();
+
         try {
             if ($this->peminjamanModel->batalkan($id)) {
                 $_SESSION['success'] = 'Peminjaman berhasil dibatalkan';
@@ -1705,6 +1742,11 @@ class AdminController extends BaseController
      */
     public function settings()
     {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/logout');
+            return;
+        }
+
         $data = [
             'title' => 'Pengaturan - LBMS',
             'user' => [
@@ -1727,6 +1769,11 @@ class AdminController extends BaseController
      */
     public function settingsProfile()
     {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/logout');
+            return;
+        }
+
         $data = [
             'title' => 'Profil Pengaturan - LBMS',
             'user' => [
@@ -1749,6 +1796,11 @@ class AdminController extends BaseController
      */
     public function settingsPrivacySecurity()
     {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/logout');
+            return;
+        }
+
         $data = [
             'title' => 'Privasi & Keamanan - LBMS',
             'user' => [
@@ -1771,6 +1823,10 @@ class AdminController extends BaseController
      */
     public function notifications()
     {
+        if (!$this->isLoggedIn()) {
+            $this->redirect('/logout');
+        }
+
         $data = [
             'title' => 'Notifikasi - LBMS',
             'user' => [
@@ -1824,6 +1880,28 @@ class AdminController extends BaseController
     }
 
     /**
+     * Mark all notifications as read (AJAX)
+     */
+    public function markAllNotificationsRead()
+    {
+        header('Content-Type: application/json');
+
+        if (!$this->isLoggedIn()) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            $userId = $_SESSION['user_id'];
+            $result = $this->notifikasiModel->markAllAsRead($userId);
+            echo json_encode(['success' => $result ? true : false]);
+        } catch (Exception $e) {
+            error_log("Mark all notifications read error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Failed to mark all as read']);
+        }
+    }
+
+    /**
      * Delete notification (AJAX)
      */
     public function deleteNotification($id)
@@ -1849,6 +1927,7 @@ class AdminController extends BaseController
      */
     public function prosesPeminjaman($id)
     {
+        $this->requireAdmin();
         header('Content-Type: application/json');
 
         try {
@@ -1878,6 +1957,7 @@ class AdminController extends BaseController
      */
     public function tolakPeminjaman($id)
     {
+        $this->requireAdmin();
         header('Content-Type: application/json');
 
         try {
@@ -1910,6 +1990,7 @@ class AdminController extends BaseController
      */
     public function selesaikanPeminjaman($id)
     {
+        $this->requireAdmin();
         header('Content-Type: application/json');
 
         try {

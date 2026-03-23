@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Alat Model
+ * Model untuk mengelola data alat laboratorium
  */
 class AlatModel extends BaseModel
 {
@@ -10,7 +10,6 @@ class AlatModel extends BaseModel
         'kode_alat',
         'nama_alat',
         'kategori_id',
-        'tipe_id',
         'tahun_pembelian',
         'jumlah',
         'kondisi',
@@ -19,10 +18,8 @@ class AlatModel extends BaseModel
         'status'
     ];
 
-    /**
-     * Get alat with pagination and filters
-     */
-    public function getAlatPaginated($page = 1, $limit = 10, $search = '', $kategoriId = '', $tipeId = '')
+    /** Ambil daftar alat dengan pagination dan filter */
+    public function getAlatPaginated($page = 1, $limit = 10, $search = '', $kategoriId = '')
     {
         $limit = $limit ?? Config::ITEMS_PER_PAGE;
         $offset = ($page - 1) * $limit;
@@ -40,19 +37,13 @@ class AlatModel extends BaseModel
             $params['kategori_id'] = $kategoriId;
         }
 
-        if (!empty($tipeId)) {
-            $whereClause .= ' AND a.tipe_id = :tipe_id';
-            $params['tipe_id'] = $tipeId;
-        }
-
         $countSql = "SELECT COUNT(*) as total FROM {$this->table} a $whereClause";
         $countResult = $this->db->fetch($countSql, $params);
         $total = $countResult['total'] ?? 0;
 
-        $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 $whereClause
                 ORDER BY a.created_at DESC
                 LIMIT :limit OFFSET :offset";
@@ -73,81 +64,47 @@ class AlatModel extends BaseModel
         ];
     }
 
-    /**
-     * Get alat with details
-     */
+    /** Ambil detail alat beserta jumlah peminjaman */
     public function getAlatDetails($id)
     {
         $sql = "SELECT a.*,
                        k.name as kategori_name,
-                       t.name as tipe_name,
                        COUNT(p.id) as total_peminjaman,
                        COUNT(CASE WHEN p.status = 'DIPINJAM' THEN 1 END) as active_peminjaman
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
-                LEFT JOIN peminjaman p ON a.id = p.alat_id AND p.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN peminjaman p ON p.item_type = 'alat' AND p.item_id = a.id AND p.deleted_at IS NULL
                 WHERE a.id = :id AND a.deleted_at IS NULL
                 GROUP BY a.id";
 
         return $this->db->fetch($sql, ['id' => $id]);
     }
 
-    /**
-     * Get all categories
-     */
+    /** Ambil semua kategori yang tersedia */
     public function getAllKategori()
     {
-        $sql = "SELECT id, name FROM kategori_alat WHERE deleted_at IS NULL ORDER BY name ASC";
+        $sql = "SELECT id, name FROM kategori WHERE deleted_at IS NULL ORDER BY name ASC";
         return $this->db->fetchAll($sql);
     }
 
-    /**
-     * Get all types
-     */
-    public function getAllTipe()
-    {
-        $sql = "SELECT id, name FROM tipe_alat WHERE deleted_at IS NULL ORDER BY name ASC";
-        return $this->db->fetchAll($sql);
-    }
-
-    /**
-     * Get alat by category
-     */
+    /** Ambil daftar alat berdasarkan kategori */
     public function getAlatByKategori($kategoriId)
     {
         $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE a.kategori_id = :kategori_id AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['kategori_id' => $kategoriId]);
     }
 
-    /**
-     * Get alat by type
-     */
-    public function getAlatByTipe($tipeId)
-    {
-        $sql = "SELECT a.*, t.name as tipe_name
-                FROM {$this->table} a
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
-                WHERE a.tipe_id = :tipe_id AND a.deleted_at IS NULL
-                ORDER BY a.nama_alat";
-
-        return $this->db->fetchAll($sql, ['tipe_id' => $tipeId]);
-    }
-
-    /**
-     * Get available alat for borrowing
-     */
+    /** Ambil alat yang tersedia untuk dipinjam (status TERSEDIA & kondisi BAIK) */
     public function getAvailableAlat()
     {
-        $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE a.status = 'TERSEDIA'
                   AND a.kondisi = 'BAIK'
                   AND a.deleted_at IS NULL
@@ -156,9 +113,7 @@ class AlatModel extends BaseModel
         return $this->db->fetchAll($sql);
     }
 
-    /**
-     * Update alat status
-     */
+    /** Update status alat */
     public function updateStatus($alatId, $status)
     {
         $sql = "UPDATE {$this->table}
@@ -167,9 +122,7 @@ class AlatModel extends BaseModel
         return $this->db->query($sql, ['status' => $status, 'id' => $alatId]);
     }
 
-    /**
-     * Update alat condition
-     */
+    /** Update kondisi alat */
     public function updateCondition($alatId, $kondisi)
     {
         $sql = "UPDATE {$this->table}
@@ -178,15 +131,12 @@ class AlatModel extends BaseModel
         return $this->db->query($sql, ['kondisi' => $kondisi, 'id' => $alatId]);
     }
 
-    /**
-     * Search alat
-     */
+    /** Cari alat berdasarkan nama, kode, atau deskripsi */
     public function searchAlat($query, $limit = 20)
     {
-        $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE (a.nama_alat LIKE :query OR a.kode_alat LIKE :query OR a.deskripsi LIKE :query)
                   AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat
@@ -198,43 +148,35 @@ class AlatModel extends BaseModel
         ]);
     }
 
-    /**
-     * Get alat by condition
-     */
+    /** Ambil daftar alat berdasarkan kondisi */
     public function getAlatByCondition($kondisi)
     {
-        $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE a.kondisi = :kondisi AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['kondisi' => $kondisi]);
     }
 
-    /**
-     * Get alat by status
-     */
+    /** Ambil daftar alat berdasarkan status */
     public function getAlatByStatus($status)
     {
-        $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE a.status = :status AND a.deleted_at IS NULL
                 ORDER BY a.nama_alat";
 
         return $this->db->fetchAll($sql, ['status' => $status]);
     }
 
-    /**
-     * Get total alat count by category
-     */
+    /** Hitung jumlah alat per kategori */
     public function getAlatCountByKategori()
     {
         $sql = "SELECT k.name, COUNT(a.id) as total
-                FROM kategori_alat k
+                FROM kategori k
                 LEFT JOIN alat a ON k.id = a.kategori_id AND a.deleted_at IS NULL
                 WHERE k.deleted_at IS NULL
                 GROUP BY k.id, k.name
@@ -243,9 +185,7 @@ class AlatModel extends BaseModel
         return $this->db->fetchAll($sql);
     }
 
-    /**
-     * Get alat statistics
-     */
+    /** Ambil statistik alat (total, per status, per kondisi, dll) */
     public function getAlatStatistics()
     {
         $stats = [];
@@ -275,9 +215,7 @@ class AlatModel extends BaseModel
         return $stats;
     }
 
-    /**
-     * Check if kode alat exists
-     */
+    /** Cek apakah kode alat sudah ada di database */
     public function kodeAlatExists($kodeAlat, $excludeId = null)
     {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE kode_alat = :kode_alat AND deleted_at IS NULL";
@@ -292,15 +230,12 @@ class AlatModel extends BaseModel
         return ($result['count'] ?? 0) > 0;
     }
 
-    /**
-     * Get recent alat additions
-     */
+    /** Ambil alat yang baru ditambahkan */
     public function getRecentAlat($limit = 5)
     {
-        $sql = "SELECT a.*, k.name as kategori_name, t.name as tipe_name
+        $sql = "SELECT a.*, k.name as kategori_name
                 FROM {$this->table} a
-                LEFT JOIN kategori_alat k ON a.kategori_id = k.id AND k.deleted_at IS NULL
-                LEFT JOIN tipe_alat t ON a.tipe_id = t.id AND t.deleted_at IS NULL
+                LEFT JOIN kategori k ON a.kategori_id = k.id AND k.deleted_at IS NULL
                 WHERE a.deleted_at IS NULL
                 ORDER BY a.created_at DESC
                 LIMIT :limit";
@@ -309,9 +244,7 @@ class AlatModel extends BaseModel
         return $stmt ? $stmt->fetchAll() : [];
     }
 
-    /**
-     * Soft delete alat
-     */
+    /** Hapus alat (soft delete, hanya tandai deleted_at) */
     public function softDelete($id)
     {
         $sql = "UPDATE {$this->table} SET deleted_at = NOW() WHERE id = :id";

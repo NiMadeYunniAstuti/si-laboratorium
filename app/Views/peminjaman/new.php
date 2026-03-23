@@ -1,108 +1,24 @@
-<!DOCTYPE html>
-<html lang="id">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajukan Peminjaman Baru - LBMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
-</head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <img src="/images/logo.webp" alt="LBMS Logo">
-            </div>
-        </div>
+<?php
+$title = 'Ajukan Peminjaman Baru - LBMS';
+$current_route = '/peminjaman';
+require_once __DIR__ . '/../layouts/header.php';
+require_once __DIR__ . '/../layouts/sidebar.php';
+require_once __DIR__ . '/../layouts/navbar.php';
+?>
 
-        <nav class="sidebar-menu">
-            <a href="/dashboard" class="sidebar-menu-item">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/users" class="sidebar-menu-item">
-                    <i class="bi bi-people"></i>
-                    Data User
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/alat" class="sidebar-menu-item">
-                    <i class="bi bi-wrench"></i>
-                    Manajemen Alat
-                </a>
-            <?php endif; ?>
-            <a href="/peminjaman" class="sidebar-menu-item active">
-                <i class="bi bi-hand-index"></i>
-                Peminjaman
-            </a>
-            <a href="/settings" class="sidebar-menu-item">
-                <i class="bi bi-gear"></i>
-                Settings
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <a href="/logout" class="sidebar-menu-item logout-item">
-                <i class="bi bi-box-arrow-right"></i>
-                Logout
-            </a>
-        </div>
-    </aside>
-
-    <!-- Top Navbar -->
-    <nav class="top-navbar" id="topNavbar">
+<!-- Main Content -->
+<main class="main-content" id="mainContent">
+    <div class="page-header px-0 mb-4">
         <div class="d-flex align-items-center">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <!-- Global Search -->
-            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
-                <select id="globalSearch" class="form-select" style="width: 100%;">
-                    <option value="">Cari</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="navbar-right">
-            <div class="d-flex align-items-center">
-                <!-- Notification Icon -->
-                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
-                    <i class="bi bi-bell"></i>
-                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= $unreadNotificationCount ?>
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    <?php endif; ?>
-                </a>
-
-                <!-- User Profile -->
-                <div class="user-profile">
-                    <div class="user-info text-end">
-                        <div class="user-name"><?= htmlspecialchars($user['name'] ?? 'Admin User') ?></div>
-                        <div class="user-role"><?= htmlspecialchars($user['role'] ?? 'ADMIN') ?></div>
-                    </div>
-                    <div class="user-avatar ms-2">
-                        <?= substr($user['name'] ?? 'Admin User', 0, 1) ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <div class="d-flex align-items-center mb-4">
-            <a href="/peminjaman" class="btn btn-outline-secondary me-3">
-                <i class="bi bi-arrow-left me-2"></i>Kembali
+            <a href="/peminjaman" class="btn btn-outline-primary btn-sm me-3">
+                <i class="bi bi-arrow-left"></i>
             </a>
-            <h1 class="mb-0">Ajukan Peminjaman Baru</h1>
+            <div>
+                <h1 class="page-title">Ajukan Peminjaman</h1>
+                <p class="page-subtitle">Pilih alat dan tentukan durasi peminjaman</p>
+            </div>
         </div>
+    </div>
 
         <?php if (isset($error)): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -120,13 +36,13 @@
             </div>
         <?php endif; ?>
 
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-plus-circle me-2"></i>Form Peminjaman
-                </h5>
-            </div>
-            <div class="card-body">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold text-primary">
+                <i class="bi bi-plus-circle me-2"></i>Form Pengajuan
+            </h5>
+        </div>
+        <div class="card-body p-4">
                 <form method="POST" action="/peminjaman/create" id="tambahPeminjamanForm">
                     <div class="row">
                         <div class="col-md-6">
@@ -152,7 +68,21 @@
                                 <i class="bi bi-box me-1"></i>Detail Peminjaman
                             </h6>
 
+                            <!-- Step 1: Choose Type -->
                             <div class="mb-3">
+                                <label class="form-label">Jenis Peminjaman</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="jenis_item" id="jenis_alat" value="alat" checked>
+                                    <label class="form-check-label" for="jenis_alat"><i class="bi bi-tools me-1"></i> Alat</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="jenis_item" id="jenis_ruangan" value="ruangan">
+                                    <label class="form-check-label" for="jenis_ruangan"><i class="bi bi-door-open me-1"></i> Ruangan</label>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Select Alat (shown when Alat selected) -->
+                            <div id="alat_section" class="mb-3">
                                 <label for="alat_id" class="form-label">Pilih Alat</label>
                                 <select class="form-control" id="alat_id" name="alat_id" required <?= empty($alatList) ? 'disabled' : '' ?>>
                                     <option value="">Pilih Alat</option>
@@ -172,6 +102,26 @@
                                 </small>
                             </div>
 
+                            <!-- Step 2: Select Ruangan (hidden by default) -->
+                            <div id="ruangan_section" class="mb-3" style="display: none;">
+                                <label for="ruangan_id" class="form-label">Pilih Ruangan</label>
+                                <select class="form-control select2-enable" id="ruangan_id" name="ruangan_id">
+                                    <option value="">Pilih Ruangan</option>
+                                    <?php if (!empty($ruanganList)): ?>
+                                        <?php foreach ($ruanganList as $ruangan): ?>
+                                            <option value="<?= $ruangan['id'] ?>">
+                                                <?= htmlspecialchars($ruangan['nama_ruangan'] ?? 'Ruangan') ?>
+                                                (<?= htmlspecialchars($ruangan['kode_ruangan'] ?? '-') ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="">Tidak ada ruangan tersedia</option>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <?= empty($ruanganList) ? 'Belum ada ruangan tersedia untuk dipinjam.' : 'Pilih ruangan yang akan dipinjam.' ?>
+                                </small>
+                            </div>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
@@ -189,7 +139,6 @@
                                 </div>
                             </div>
 
-                        </div>
                     </div>
 
                     <div class="row mt-4">
@@ -210,129 +159,97 @@
 
             </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            function toggleSidebar() {
-                $('#sidebar').toggleClass('collapsed');
-                $('#topNavbar').toggleClass('sidebar-collapsed');
-                $('#mainContent').toggleClass('sidebar-collapsed');
+    <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
 
-                const isCollapsed = $('#sidebar').hasClass('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
-            }
-
-            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (sidebarCollapsed) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
-
-            $('#sidebarToggle').on('click', function(e) {
-                e.stopPropagation();
-                toggleSidebar();
-            });
-
-            if (!$('#alat_id').prop('disabled')) {
-                $('#alat_id').select2({
-                    theme: 'bootstrap-5',
-                    width: '100%',
-                    placeholder: 'Pilih alat',
-                    allowClear: true
-                });
-            }
-
-            const now = new Date();
-            const pad = (value) => String(value).padStart(2, '0');
-            const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-            const minDateTime = `${todayStr}T00:00`;
-            $('#tanggal_pinjam').attr('min', minDateTime);
-            $('#tanggal_kembali').attr('min', minDateTime);
-
-            $('#tanggal_pinjam').on('change', function() {
-                const pinjamDate = new Date($(this).val());
-                const minKembali = new Date(pinjamDate.getTime() + (24 * 60 * 60 * 1000)); 
-                const minKembaliStr = `${minKembali.getFullYear()}-${pad(minKembali.getMonth() + 1)}-${pad(minKembali.getDate())}T${pad(minKembali.getHours())}:${pad(minKembali.getMinutes())}`;
-                $('#tanggal_kembali').attr('min', minKembaliStr);
-
-                const defaultKembali = new Date(pinjamDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-                const defaultKembaliStr = `${defaultKembali.getFullYear()}-${pad(defaultKembali.getMonth() + 1)}-${pad(defaultKembali.getDate())}T${pad(defaultKembali.getHours())}:${pad(defaultKembali.getMinutes())}`;
-                $('#tanggal_kembali').val(defaultKembaliStr);
-            });
-
-            $('#tambahPeminjamanForm').on('submit', function(e) {
-                const tanggalPinjam = new Date($('#tanggal_pinjam').val());
-                const tanggalKembali = new Date($('#tanggal_kembali').val());
-                const todayDateOnly = new Date();
-                todayDateOnly.setHours(0, 0, 0, 0);
-                const pinjamDateOnly = new Date(tanggalPinjam.getFullYear(), tanggalPinjam.getMonth(), tanggalPinjam.getDate());
-
-                if (isNaN(tanggalPinjam.getTime()) || pinjamDateOnly < todayDateOnly) {
-                    e.preventDefault();
-                    alert('Tanggal pinjam tidak boleh kurang dari hari ini');
-                    return false;
-                }
-
-                if (tanggalKembali <= tanggalPinjam) {
-                    e.preventDefault();
-                    alert('Tanggal kembali harus lebih dari tanggal pinjam');
-                    return false;
-                }
-
-                return true;
-            });
-
-            if ($(window).width() <= 768) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-            const $search = $('#globalSearch');
-            if (!$search.length || !$.fn.select2) {
-                return;
-            }
-
-            const searchItems = [
-                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
-                { id: 'users', text: 'Users', url: '/users' },
-                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
-                { id: 'alat', text: 'Alat', url: '/alat' },
-                { id: 'profile', text: 'Profile', url: '/settings/profile' },
-{ id: 'notifications', text: 'Notifications', url: '/notifications' },
-            ];
-
-            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
-            const filteredSearchItems = searchItems.filter(item => {
-                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
-                    return false;
-                }
-                return true;
-            });
-
-            $search.select2({
+<script>
+    $(document).ready(function() {
+        // Select2 for Alat Selection
+        if (!$('#alat_id').prop('disabled')) {
+            $('#alat_id').select2({
                 theme: 'bootstrap-5',
                 width: '100%',
-                placeholder: 'Cari',
-                allowClear: true,
-                data: filteredSearchItems
+                placeholder: 'Pilih alat',
+                allowClear: true
             });
-
-            $search.on('select2:select', function(e) {
-                const url = e.params.data && e.params.data.url;
-                if (url) {
-                    window.location.href = url;
+        }
+        // Toggle between Alat and Ruangan sections
+        $('input[name="jenis_item"]').on('change', function() {
+            const jenis = $(this).val();
+            if (jenis === 'alat') {
+                $('#alat_section').show();
+                $('#ruangan_section').hide();
+                $('#alat_id').prop('required', true);
+                $('#ruangan_id').prop('required', false);
+                // Initialize Select2 for Alat if not disabled
+                if (!$('#alat_id').prop('disabled') && !$('#alat_id').data('select2')) {
+                    $('#alat_id').select2({
+                        theme: 'bootstrap-5',
+                        width: '100%',
+                        placeholder: 'Pilih alat',
+                        allowClear: true
+                    });
                 }
-            });
+            } else {
+                $('#alat_section').hide();
+                $('#ruangan_section').show();
+                $('#alat_id').prop('required', false);
+                $('#ruangan_id').prop('required', true);
+                // Initialize Select2 for Ruangan
+                if (!$('#ruangan_id').data('select2')) {
+                    $('#ruangan_id').select2({
+                        theme: 'bootstrap-5',
+                        width: '100%',
+                        placeholder: 'Pilih ruangan',
+                        allowClear: true
+                    });
+                }
+            }
         });
-    </script>
+        // DateTime Logic
+        const now = new Date();
+        const pad = (value) => String(value).padStart(2, '0');
+        const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const minDateTime = `${todayStr}T00:00`;
+        
+        $('#tanggal_pinjam').attr('min', minDateTime);
+        $('#tanggal_kembali').attr('min', minDateTime);
 
+        $('#tanggal_pinjam').on('change', function() {
+            const pinjamDate = new Date($(this).val());
+            if (isNaN(pinjamDate.getTime())) return;
+
+            const minKembali = new Date(pinjamDate.getTime() + (24 * 60 * 60 * 1000)); 
+            const minKembaliStr = `${minKembali.getFullYear()}-${pad(minKembali.getMonth() + 1)}-${pad(minKembali.getDate())}T${pad(minKembali.getHours())}:${pad(minKembali.getMinutes())}`;
+            $('#tanggal_kembali').attr('min', minKembaliStr);
+
+            // Default: 1 week later
+            const defaultKembali = new Date(pinjamDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+            const defaultKembaliStr = `${defaultKembali.getFullYear()}-${pad(defaultKembali.getMonth() + 1)}-${pad(defaultKembali.getDate())}T${pad(defaultKembali.getHours())}:${pad(defaultKembali.getMinutes())}`;
+            $('#tanggal_kembali').val(defaultKembaliStr);
+        });
+
+        // Form Validation
+        $('#tambahPeminjamanForm').on('submit', function(e) {
+            const tanggalPinjam = new Date($('#tanggal_pinjam').val());
+            const tanggalKembali = new Date($('#tanggal_kembali').val());
+            const now = new Date();
+            now.setSeconds(0, 0);
+
+            if (isNaN(tanggalPinjam.getTime())) {
+                e.preventDefault();
+                alert('Silakan pilih tanggal pinjam yang valid');
+                return false;
+            }
+
+            if (tanggalKembali <= tanggalPinjam) {
+                e.preventDefault();
+                alert('Tanggal kembali harus setelah tanggal pinjam');
+                return false;
+            }
+
+            return true;
+        });
+    });
+</script>
 </body>
 </html>

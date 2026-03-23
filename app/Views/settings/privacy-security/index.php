@@ -1,318 +1,185 @@
-<!DOCTYPE html>
-<html lang="id">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privasi & Keamanan - LBMS</title>
+<?php
+$title = 'Keamanan Akun - LBMS';
+$current_route = '/settings/privacy-security';
+require_once __DIR__ . '/../../layouts/header.php';
+require_once __DIR__ . '/../../layouts/sidebar.php';
+require_once __DIR__ . '/../../layouts/navbar.php';
+?>
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <!-- Custom CSS -->
-    <link href="/assets/css/main.css?v=<?php echo date('YmHis'); ?>" rel="stylesheet">
-</head>
-<body>
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <div class="sidebar-logo">
-                <img src="/images/logo.webp" alt="LBMS Logo">
-            </div>
+<main class="main-content" id="mainContent">
+    <div class="d-flex align-items-center mb-4">
+        <a href="/settings" class="btn btn-outline-secondary btn-sm rounded-pill me-3">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+        <div>
+            <h1 class="page-title h3 fw-bold mb-0">Keamanan Akun</h1>
+            <p class="text-muted mb-0">Kelola akses dan keamanan akun Anda</p>
         </div>
+    </div>
 
-        <nav class="sidebar-menu">
-            <a href="/dashboard" class="sidebar-menu-item">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/users" class="sidebar-menu-item">
-                    <i class="bi bi-people"></i>
-                    Data User
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'ADMIN'): ?>
-                <a href="/alat" class="sidebar-menu-item">
-                    <i class="bi bi-wrench"></i>
-                    Manajemen Alat
-                </a>
-            <?php endif; ?>
-            <?php if (($user['role'] ?? 'USER') === 'USER'): ?>
-                <a href="/peminjaman" class="sidebar-menu-item">
-                    <i class="bi bi-hand-index"></i>
-                    Peminjaman
-                </a>
-            <?php endif; ?>
-            <a href="/settings" class="sidebar-menu-item active">
-                <i class="bi bi-gear"></i>
-                Settings
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <a href="/logout" class="sidebar-menu-item logout-item">
-                <i class="bi bi-box-arrow-right"></i>
-                Logout
-            </a>
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <?= htmlspecialchars($error) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </aside>
+    <?php endif; ?>
 
-    <!-- Top Navbar -->
-    <nav class="top-navbar" id="topNavbar">
-        <div class="d-flex align-items-center">
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <!-- Global Search -->
-            <div class="ms-3 flex-grow-1 d-none d-md-block global-search-wrapper" style="">
-                <select id="globalSearch" class="form-select" style="width: 100%;">
-                    <option value="">Cari</option>
-                </select>
-            </div>
+    <?php if (!empty($success)): ?>
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <?= htmlspecialchars($success) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+    <?php endif; ?>
 
-        <div class="navbar-right">
-            <div class="d-flex align-items-center">
-                <!-- Notification Icon -->
-                <a href="/notifications" class="btn btn-outline-secondary me-3 position-relative">
-                    <i class="bi bi-bell"></i>
-                    <?php if (($unreadNotificationCount ?? 0) > 0): ?>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            <?= $unreadNotificationCount ?>
-                            <span class="visually-hidden">unread notifications</span>
-                        </span>
-                    <?php endif; ?>
-                </a>
-
-                <!-- User Profile -->
-                <div class="user-profile">
-                    <div class="user-info text-end">
-                        <div class="user-name"><?= htmlspecialchars($user['name'] ?? 'Admin User') ?></div>
-                        <div class="user-role"><?= htmlspecialchars($user['role'] ?? 'ADMIN') ?></div>
-                    </div>
-                    <div class="user-avatar ms-2">
-                        <?= substr($user['name'] ?? 'Admin User', 0, 1) ?>
-                    </div>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom-0 p-4 pb-0">
+                    <h5 class="fw-bold mb-0">Email & Password</h5>
                 </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content" id="mainContent">
-        <div class="d-flex align-items-center mb-4">
-            <a href="/settings" class="btn btn-outline-secondary me-3">
-                <i class="bi bi-arrow-left me-2"></i>Kembali
-            </a>
-            <h1 class="page-title mb-0">Keamanan Akun</h1>
-        </div>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <?= htmlspecialchars($_SESSION['error']) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <?= htmlspecialchars($_SESSION['success']) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            <?php unset($_SESSION['success']); ?>
-        <?php endif; ?>
-
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">Privasi & Keamanan</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/settings/privacy-security/update" id="privacySecurityForm">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email"
-                                   value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
-                            <small class="form-text text-muted">Email digunakan untuk login</small>
+                <div class="card-body p-4">
+                    <form method="POST" action="/settings/privacy-security/update" id="privacySecurityForm">
+                        <!-- Email Section -->
+                        <div class="mb-4 pb-4 border-bottom">
+                            <label for="email" class="form-label small fw-semibold">Alamat Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control border-start-0 ps-0" id="email" name="email" 
+                                       value="<?= htmlspecialchars($user['email'] ?? '') ?>" required>
+                            </div>
+                            <div class="form-text smaller text-muted">Email ini digunakan untuk masuk ke sistem dan menerima notifikasi penting.</div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="current_password" class="form-label">Password Saat Ini</label>
-                            <input type="password" class="form-control" id="current_password" name="current_password">
-                            <small class="form-text text-muted">Masukkan password saat ini untuk mengubah password</small>
-                        </div>
+                        <!-- Password Section -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3 small text-uppercase text-muted letter-spacing-1">Ubah Password</h6>
+                            
+                            <div class="mb-3">
+                                <label for="current_password" class="form-label small fw-semibold">Password Saat Ini</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                                    <input type="password" class="form-control border-start-0 ps-0" id="current_password" name="current_password" 
+                                           placeholder="Masukkan password saat ini">
+                                </div>
+                                <div class="form-text smaller text-muted">Diperlukan untuk memverifikasi identitas Anda saat mengubah password.</div>
+                            </div>
 
-                        <div class="mb-3">
-                            <label for="new_password" class="form-label">Password Baru</label>
-                            <input type="password" class="form-control" id="new_password" name="new_password">
-                            <div class="password-strength mt-2">
-                                <div class="progress" style="height: 5px;">
-                                    <div class="progress-bar" id="passwordStrengthBar" style="width: 0%; transition: all 0.3s ease;"></div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="new_password" class="form-label small fw-semibold">Password Baru</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-key"></i></span>
+                                        <input type="password" class="form-control border-start-0 ps-0" id="new_password" name="new_password" 
+                                               placeholder="Password minimal 8 karakter">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="confirm_password" class="form-label small fw-semibold">Konfirmasi Password Baru</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-key-fill"></i></span>
+                                        <input type="password" class="form-control border-start-0 ps-0" id="confirm_password" name="confirm_password" 
+                                               placeholder="Ulangi password baru">
+                                    </div>
                                 </div>
                             </div>
-                            <small class="form-text" id="passwordStrengthText">Minimal 8 karakter, kombinasi huruf dan angka</small>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="confirm_password" class="form-label">Konfirmasi Password Baru</label>
-                            <input type="password" class="form-control" id="confirm_password" name="confirm_password">
-                            <small class="form-text text-muted">Masukkan kembali password baru untuk konfirmasi</small>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-circle me-2"></i>Simpan Keamanan
-                                </button>
-                            </div>
+                        <div class="mt-4 pt-2 d-flex justify-content-end">
+                            <button type="button" onclick="resetForm()" class="btn btn-light rounded-pill px-4 me-2">Batal</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-shield-check me-2"></i>Simpan Keamanan
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            function toggleSidebar() {
-                $('#sidebar').toggleClass('collapsed');
-                $('#topNavbar').toggleClass('sidebar-collapsed');
-                $('#mainContent').toggleClass('sidebar-collapsed');
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm bg-primary text-white mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-2 me-3">
+                            <i class="bi bi-info-circle fs-4"></i>
+                        </div>
+                        <h6 class="fw-bold mb-0">Tips Keamanan</h6>
+                    </div>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-3 d-flex align-items-start">
+                            <i class="bi bi-dot me-1 fs-5"></i>
+                            Gunakan kombinasi huruf besar, kecil, angka, dan simbol.
+                        </li>
+                        <li class="mb-3 d-flex align-items-start">
+                            <i class="bi bi-dot me-1 fs-5"></i>
+                            Hindari menggunakan informasi personal seperti tanggal lahir.
+                        </li>
+                        <li class="d-flex align-items-start">
+                            <i class="bi bi-dot me-1 fs-5"></i>
+                            Ganti password Anda secara berkala setidaknya 3-6 bulan sekali.
+                        </li>
+                    </ul>
+                </div>
+            </div>
 
-                const isCollapsed = $('#sidebar').hasClass('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
-            }
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 text-center">
+                    <div class="bg-warning-subtle text-warning rounded-circle d-inline-flex p-3 mb-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                    </div>
+                    <h6 class="fw-bold mb-2">Peringatan Penting</h6>
+                    <p class="text-muted small mb-0">
+                        Jika Anda mengganti email atau password, Anda akan diminta untuk masuk kembali menggunakan kredensial baru.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
 
-            const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (sidebarCollapsed) {
-                $('#sidebar').addClass('collapsed');
-                $('#topNavbar').addClass('sidebar-collapsed');
-                $('#mainContent').addClass('sidebar-collapsed');
-            }
+<?php 
+// Add extra JS for form validation
+ob_start(); 
+?>
+<script>
+    $(document).ready(function() {
+        $('#privacySecurityForm').on('submit', function(e) {
+            const currentPassword = $('#current_password').val();
+            const newPassword = $('#new_password').val();
+            const confirmPassword = $('#confirm_password').val();
 
-            $('#sidebarToggle').on('click', function(e) {
-                e.stopPropagation();
-                toggleSidebar();
-            });
-
-            function checkPasswordStrength(password) {
-                let strength = 0;
-                const strengthBar = $('#passwordStrengthBar');
-                const strengthText = $('#passwordStrengthText');
-
-                if (password.length >= 8) strength++;
-                if (password.match(/[a-z]+/)) strength++;
-                if (password.match(/[A-Z]+/)) strength++;
-                if (password.match(/[0-9]+/)) strength++;
-                if (password.match(/[$@#&!]+/)) strength++;
-
-                strengthBar.removeClass('bg-danger bg-warning bg-success');
-
-                if (password.length === 0) {
-                    strengthBar.css('width', '0%');
-                    strengthText.text('Minimal 8 karakter, kombinasi huruf dan angka').removeClass('text-danger text-warning text-success');
-                } else if (strength < 3) {
-                    strengthBar.css('width', '33%').addClass('bg-danger');
-                    strengthText.text('Password lemah').removeClass('text-warning text-success').addClass('text-danger');
-                } else if (strength === 3 || strength === 4) {
-                    strengthBar.css('width', '66%').addClass('bg-warning');
-                    strengthText.text('Password sedang').removeClass('text-danger text-success').addClass('text-warning');
-                } else {
-                    strengthBar.css('width', '100%').addClass('bg-success');
-                    strengthText.text('Password kuat').removeClass('text-danger text-warning').addClass('text-success');
-                }
-            }
-
-            $('#new_password').on('input', function() {
-                checkPasswordStrength($(this).val());
-            });
-
-            $('#privacySecurityForm').on('submit', function(e) {
-                const currentPassword = $('#current_password').val();
-                const newPassword = $('#new_password').val();
-                const confirmPassword = $('#confirm_password').val();
-
-                if (newPassword || confirmPassword) {
-                    if (!currentPassword) {
-                        e.preventDefault();
-                        alert('Password saat ini harus diisi untuk mengubah password');
-                        return false;
-                    }
-
-                    if (newPassword.length < 8) {
-                        e.preventDefault();
-                        alert('Password baru minimal 8 karakter');
-                        return false;
-                    }
-
-                    if (newPassword !== confirmPassword) {
-                        e.preventDefault();
-                        alert('Password baru dan konfirmasi password tidak cocok');
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-
-            window.resetForm = function() {
-                $('#privacySecurityForm')[0].reset();
-                $('#passwordStrengthBar').css('width', '0%');
-                $('#passwordStrengthText').text('Minimal 8 karakter, kombinasi huruf dan angka').removeClass('text-danger text-warning text-success');
-            };
-
-            console.log('Privacy security page loaded successfully');
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-            const $search = $('#globalSearch');
-            if (!$search.length || !$.fn.select2) {
-                return;
-            }
-
-            const searchItems = [
-                { id: 'dashboard', text: 'Dashboard', url: '/dashboard' },
-                { id: 'users', text: 'Users', url: '/users' },
-                { id: 'peminjaman', text: 'Peminjaman', url: '/peminjaman' },
-                { id: 'alat', text: 'Alat', url: '/alat' },
-                { id: 'profile', text: 'Profile', url: '/settings/profile' },
-{ id: 'notifications', text: 'Notifications', url: '/notifications' },
-            ];
-
-            const userRole = "<?= htmlspecialchars($user['role'] ?? 'USER') ?>";
-            const filteredSearchItems = searchItems.filter(item => {
-                if (userRole !== 'ADMIN' && (item.id === 'alat' || item.id === 'users')) {
+            if (newPassword || confirmPassword) {
+                if (!currentPassword) {
+                    e.preventDefault();
+                    alert('Password saat ini harus diisi untuk mengubah password');
                     return false;
                 }
-                return true;
-            });
 
-            $search.select2({
-                theme: 'bootstrap-5',
-                width: '100%',
-                placeholder: 'Cari',
-                allowClear: true,
-                data: filteredSearchItems
-            });
-
-            $search.on('select2:select', function(e) {
-                const url = e.params.data && e.params.data.url;
-                if (url) {
-                    window.location.href = url;
+                if (newPassword.length < 8) {
+                    e.preventDefault();
+                    alert('Password baru minimal 8 karakter');
+                    return false;
                 }
-            });
-        });
-    </script>
 
-</body>
-</html>
+                if (newPassword !== confirmPassword) {
+                    e.preventDefault();
+                    alert('Password baru dan konfirmasi password tidak cocok');
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        window.resetForm = function() {
+            if (confirm('Batalkan perubahan?')) {
+                $('#privacySecurityForm')[0].reset();
+            }
+        };
+    });
+</script>
+<?php 
+$extra_js = ob_get_clean();
+require_once __DIR__ . '/../../layouts/footer.php'; 
+?>

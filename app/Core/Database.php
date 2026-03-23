@@ -3,7 +3,8 @@
 require_once __DIR__ . '/../Config/Config.php';
 
 /**
- * Database Connection Class
+ * Kelas untuk mengelola koneksi ke database
+ * Menggunakan pola Singleton supaya koneksi cuma dibuat sekali
  */
 class Database
 {
@@ -33,9 +34,7 @@ class Database
         }
     }
 
-    /**
-     * Get database instance (Singleton pattern)
-     */
+    /** Ambil instance database (Singleton) */
     public static function getInstance()
     {
         if (self::$instance === null) {
@@ -44,17 +43,13 @@ class Database
         return self::$instance;
     }
 
-    /**
-     * Get database connection
-     */
+    /** Ambil objek koneksi PDO */
     public function getConnection()
     {
         return $this->connection;
     }
 
-    /**
-     * Execute query
-     */
+    /** Jalankan query SQL dengan parameter */
     public function query($sql, $params = [])
     {
         try {
@@ -71,51 +66,39 @@ class Database
         }
     }
 
-    /**
-     * Get single record
-     */
+    /** Ambil satu baris data */
     public function fetch($sql, $params = [])
     {
         $stmt = $this->query($sql, $params);
         return $stmt ? $stmt->fetch() : null;
     }
 
-    /**
-     * Get multiple records
-     */
+    /** Ambil semua baris data */
     public function fetchAll($sql, $params = [])
     {
         $stmt = $this->query($sql, $params);
         return $stmt ? $stmt->fetchAll() : [];
     }
 
-    /**
-     * Get last inserted ID
-     */
+    /** Ambil ID terakhir yang baru saja di-insert */
     public function lastInsertId()
     {
         return $this->connection->lastInsertId();
     }
 
-    /**
-     * Begin transaction
-     */
+    /** Mulai transaksi database */
     public function beginTransaction()
     {
         return $this->connection->beginTransaction();
     }
 
-    /**
-     * Commit transaction
-     */
+    /** Simpan semua perubahan dalam transaksi */
     public function commit()
     {
         return $this->connection->commit();
     }
 
-    /**
-     * Rollback transaction
-     */
+    /** Batalkan semua perubahan dalam transaksi */
     public function rollback()
     {
         return $this->connection->rollback();
