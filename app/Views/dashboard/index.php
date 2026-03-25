@@ -132,9 +132,6 @@ require_once __DIR__ . '/../layouts/navbar.php';
         <div class="card-header bg-white py-3 border-bottom-0">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold">Peminjaman Terbaru</h5>
-                <a href="/peminjaman" class="btn btn-sm btn-link text-primary fw-semibold text-decoration-none p-0">
-                    Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
-                </a>
             </div>
         </div>
         <div class="card-body pt-0">
